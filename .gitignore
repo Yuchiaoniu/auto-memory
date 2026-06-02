@@ -19,8 +19,17 @@ pdf_extract.txt
 # Memory & project data (contains IPs, private keys, personal data)
 projects/
 
+# Credentials & secrets
+.credentials.json
+*.credentials.json
+.memsync-*.txt
+
 # Local overrides (may contain secrets)
 settings.local.json
+
+# Per-project state (synced separately via openspec)
+STATE.md
+memory.md
 
 # Backup files
 *.bak
