@@ -1,0 +1,26 @@
+# Runtime & session data
+history.jsonl
+last-active-project.txt
+daemon.log
+daemon-auth-cooldown
+daemon-auth-status.json
+session-env/
+sessions/
+cache/
+jobs/
+tasks/
+shell-snapshots/
+paste-cache/
+file-history/
+backups/
+downloads/
+pdf_extract.txt
+
+# Memory & project data (contains IPs, private keys, personal data)
+projects/
+
+# Local overrides (may contain secrets)
+settings.local.json
+
+# Backup files
+*.bak
