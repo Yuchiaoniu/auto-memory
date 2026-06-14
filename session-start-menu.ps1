@@ -9,6 +9,10 @@
 #      使用者選定後再由 Claude 讀三檔、寫指標檔。
 #
 # 注意：壓縮後（compact）走另一支 session-start-inject-state.ps1，會自動接續上次專案，不列選單。
+# 子進程模式：spawn-project.ps1 呼叫 claude --print 時設定此環境變數
+# hook 靜默退出，避免選單輸出污染子進程的 stdout
+if ($env:CLAUDE_SUBPROCESS -eq "1") { exit 0 }
+
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # ---- 環境相依性自檢 ----

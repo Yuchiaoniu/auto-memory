@@ -33,3 +33,11 @@ memory.md
 
 # Backup files
 *.bak
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Log files
+tools/project-kitchen/server.log
