@@ -244,6 +244,7 @@ const A={
   status:['empty','empty','empty'],
   hist:[[],[],[]],
   act:['','',''],
+  aborts:[null,null,null],
   sel:null,
 };
 let dragging=null;
@@ -302,6 +303,7 @@ function si(el){return parseInt(el.id.replace('s',''));}
 
 async function stopChat(e,i){
   e.stopPropagation();
+  A.aborts[i]?.abort();
   const project=A.stoves[i];
   if(!project)return;
   try{
@@ -487,10 +489,13 @@ async function stream_(i,userMsg){
   A.hist[i].push({r:'bot',c:'...'});
   const mi=A.hist[i].length-1;
   renderStoves();scrollMsgs(i);
+  const ctrl=new AbortController();
+  A.aborts[i]=ctrl;
   try{
     const resp=await fetch('/api/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({project:A.stoves[i],userMsg}),
+      signal:ctrl.signal,
     });
     const reader=resp.body.getReader();const dec=new TextDecoder();
     let buf='',full='';
@@ -510,8 +515,12 @@ async function stream_(i,userMsg){
     }
     const m=full.match(/\[ACTION\](.+)/);
     if(m){A.act[i]=m[1].trim();renderStoves();}
-  }catch(e){A.hist[i][mi].c='❌ 錯誤：'+e.message;renderStoves();}
-  document.getElementById('sb').disabled=false;
+  }catch(e){
+    if(e.name!=='AbortError'){A.hist[i][mi].c='❌ 錯誤：'+e.message;renderStoves();}
+  }finally{
+    A.aborts[i]=null;
+    document.getElementById('sb').disabled=false;
+  }
 }
 
 function scrollMsgs(i){const el=document.getElementById('sm'+i);if(el)el.scrollTop=el.scrollHeight;}
