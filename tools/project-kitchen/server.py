@@ -18,6 +18,17 @@ def read_utf8(path, limit=1500):
     with open(path, encoding='utf-8', errors='replace') as f:
         return f.read(limit)
 
+def read_utf8_tail(path, limit=50000):
+    """Read the last `limit` bytes of a file (for append-only logs)."""
+    if not os.path.exists(path):
+        return ''
+    size = os.path.getsize(path)
+    with open(path, 'rb') as f:
+        if size > limit:
+            f.seek(-limit, 2)
+        data = f.read(limit)
+    return data.decode('utf-8', errors='replace')
+
 
 def _parse_log_turns(content, n=8):
     turns = []
@@ -38,7 +49,7 @@ def _log_since_last_impl(content):
 
 def read_log_for_prompt(project_path):
     """Read all turns since last [IMPL] marker for subprocess prompt context."""
-    content = read_utf8(os.path.join(project_path, 'log.md'), limit=50000)
+    content = read_utf8_tail(os.path.join(project_path, 'log.md'), limit=50000)
     if not content:
         return ''
     turns = _parse_log_turns(_log_since_last_impl(content), n=999)
@@ -48,7 +59,7 @@ def read_log_for_prompt(project_path):
 
 def read_log_for_display(project_path, n=20):
     """Read turns since last [IMPL] for stove history display."""
-    content = read_utf8(os.path.join(project_path, 'log.md'), limit=30000)
+    content = read_utf8_tail(os.path.join(project_path, 'log.md'), limit=50000)
     if not content:
         return []
     return _parse_log_turns(_log_since_last_impl(content), n)
@@ -113,7 +124,8 @@ def chat():
         return jsonify({'error': '找不到專案'}), 404
 
     if project not in chat_histories:
-        chat_histories[project] = []
+        turns = read_log_for_display(project_path, n=20)
+        chat_histories[project] = [(t['user'], t['bot']) for t in turns]
 
     history = chat_histories[project]
 
@@ -290,7 +302,9 @@ python C:\\Users\\yuchi\\.claude\\tools\\read_pdf.py "<PDF路徑>" [--pages 1-5]
 
             response_text = '\n'.join(l for l in full_lines if l).strip()
             if response_text:
-                history.append((user_msg, response_text))   # 只寫 in-memory
+                history.append((user_msg, response_text))
+                if len(history) > 20:
+                    history[:] = history[-20:]
                 append_log_turn(project_path, user_msg, response_text)
             yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
         except Exception as e:

@@ -367,6 +367,7 @@ function select(i){
   A.sel=i;
   updateLayout();
   renderAll();
+  scrollMsgs(i);
   const tgt=document.getElementById('ctgt');
   tgt.textContent='▶ '+(A.stoves[i]||'');
   tgt.className='ctarget active';
