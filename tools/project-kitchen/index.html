@@ -368,8 +368,11 @@ async function load(){
 function select(i){
   A.sel=i;
   updateLayout();
+  const prevEl=document.getElementById('sm'+i);
+  const saved=prevEl?prevEl.scrollTop:null;
   renderAll();
-  scrollMsgs(i);
+  const el=document.getElementById('sm'+i);
+  if(el)el.scrollTop=(saved!==null&&saved>0)?saved:el.scrollHeight;
   const tgt=document.getElementById('ctgt');
   tgt.textContent='▶ '+(A.stoves[i]||'');
   tgt.className='ctarget active';
