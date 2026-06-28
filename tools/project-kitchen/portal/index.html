@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>學習資源入口</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #6c8ef5;
+      --accent2: #7c6af7;
+      --text: #e2e8f0;
+      --text2: #8892a4;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    header {
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p { color: var(--text2); margin-top: 0.5rem; font-size: 0.95rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+      padding: 2.5rem 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s, transform 0.15s;
+      display: block;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+    .card h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .card p { font-size: 0.85rem; color: var(--text2); line-height: 1.55; }
+    .tag {
+      display: inline-block;
+      margin-top: 0.9rem;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(108,142,245,0.12);
+      color: var(--accent);
+    }
+    .section-title {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      font-size: 0.8rem;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text2);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎓 學習資源入口</h1>
+  <p>整合財務管理、統計學、會計學與互動工具的學習平台</p>
+</header>
+
+<div class="section-title" style="padding-top:2rem;">📚 學科學習平台</div>
+<div class="grid">
+  <a class="card" href="/finance/">
+    <div class="card-icon">📊</div>
+    <h2>財務管理學習系統</h2>
+    <p>Ch01–Ch14 完整課程筆記、383 道題庫、TVM 互動教室、六大計算工具。</p>
+    <span class="tag">Node.js · SQLite</span>
+  </a>
+  <a class="card" href="/stats/">
+    <div class="card-icon">📈</div>
+    <h2>統計學學習網站</h2>
+    <p>265 題題庫，三種練習模式：純認知、簡單計算、推理題。</p>
+    <span class="tag">靜態網站</span>
+  </a>
+  <a class="card" href="/accounting/">
+    <div class="card-icon">📒</div>
+    <h2>會計學學習平台</h2>
+    <p>Ch04–Ch06 選擇題與練習題，含嵌入式資料表格題型。</p>
+    <span class="tag">Node.js · SQLite</span>
+  </a>
+</div>
+
+<div class="section-title">🔧 工具</div>
+<div class="grid">
+  <a class="card" href="/kitchen/">
+    <div class="card-icon">🍳</div>
+    <h2>Project Kitchen</h2>
+    <p>多專案管理介面，整合金字塔框架與 Claude 對話，最多同時三個爐子。</p>
+    <span class="tag">Flask · SSE</span>
+  </a>
+  <a class="card" href="https://forest-carbon.duckdns.org" target="_blank">
+    <div class="card-icon">🌳</div>
+    <h2>植樹造林碳匯系統</h2>
+    <p>32 棵樹的 Gemini 量測資料，Verra VM0047 合規，GCP Besu 私鏈上鏈。</p>
+    <span class="tag">外部連結</span>
+  </a>
+</div>
+
+<footer>niuyuchiao.duckdns.org · GCP VM · 資料來源 GitHub</footer>
+
+</body>
+</html>
