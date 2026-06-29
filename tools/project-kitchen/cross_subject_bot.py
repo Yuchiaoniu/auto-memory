@@ -20,7 +20,7 @@ OUT_DIR = "/home/yuchi/cognitive-tests"
 STATE_PATH = os.path.join(OUT_DIR, "practice_state.json")
 LOG_PATH   = os.path.join(OUT_DIR, "practice_log.md")
 DB_PATH    = os.path.join(OUT_DIR, "practice.db")
-INTERVAL   = 600
+INTERVAL   = 300
 
 TZ_TAIPEI = datetime.timezone(datetime.timedelta(hours=8))
 def now_taipei():
