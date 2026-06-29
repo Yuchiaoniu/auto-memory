@@ -311,7 +311,7 @@ async function stopChat(e,i){
   const project=A.stoves[i];
   if(!project)return;
   try{
-    await fetch('/api/stop',{method:'POST',headers:{'Content-Type':'application/json'},
+    await fetch('api/stop',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({project})});
   }catch(_){}
   A.status[i]='done';
@@ -365,7 +365,7 @@ function updateLayout(){
 }
 
 async function load(){
-  try{const r=await fetch('/api/projects');A.projects=await r.json();renderAll();}
+  try{const r=await fetch('api/projects');A.projects=await r.json();renderAll();}
   catch(e){console.error('載入失敗',e);}
 }
 
@@ -460,7 +460,7 @@ function setDir(d){if(A.sel===null)return;A.dirs[A.sel]=A.dirs[A.sel]===d?'':d;r
 function rm(e,i){
   e.stopPropagation();
   const proj=A.stoves[i];
-  if(proj)fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj})});
+  if(proj)fetch('api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj})});
   A.stoves[i]=null;A.layers[i]='';A.dirs[i]='';
   A.status[i]='empty';A.hist[i]=[];A.act[i]='';
   if(A.sel===i){
@@ -499,7 +499,7 @@ async function stream_(i,userMsg){
   const ctrl=new AbortController();
   A.aborts[i]=ctrl;
   try{
-    const resp=await fetch('/api/chat',{
+    const resp=await fetch('api/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({project:A.stoves[i],userMsg}),
       signal:ctrl.signal,
@@ -541,7 +541,7 @@ async function launch(i){
   const mi=A.hist[i].length-1;
   renderStoves();scrollMsgs(i);
   try{
-    const resp=await fetch('/api/spawn',{
+    const resp=await fetch('api/spawn',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({project:proj,task}),
     });
