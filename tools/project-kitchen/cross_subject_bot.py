@@ -1036,6 +1036,22 @@ if __name__ == "__main__":
             if _subj_acc:
                 _per_concept_acc[_subj] = _subj_acc
         _summary["per_concept_acc"] = _per_concept_acc
+        # 心智模型標籤正確率分布（僅統計真實互動資料）
+        _con_mm = sqlite3.connect(DB_PATH)
+        _mm_rows = _con_mm.execute("""
+            SELECT mental_model_tag, COUNT(*) as n,
+                   SUM(CASE WHEN correct=1 THEN 1 ELSE 0 END) as hits
+            FROM answers
+            WHERE source='interactive' AND mental_model_tag IS NOT NULL
+            GROUP BY mental_model_tag
+            ORDER BY n DESC
+        """).fetchall()
+        _con_mm.close()
+        if _mm_rows:
+            _summary["per_mental_model_acc"] = {
+                row[0]: {"n": row[1], "acc": f"{round(row[2]/row[1]*100)}%"}
+                for row in _mm_rows
+            }
         if _ic == 0:
             _summary["next_action"] = "系統已就緒，執行 python3 cross_subject_bot.py interactive 開始真實測試，所有心智模型標籤才能發揮作用"
         print(_json.dumps(_summary, ensure_ascii=False))
