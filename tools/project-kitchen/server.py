@@ -4,7 +4,11 @@ import os, re, json, subprocess, datetime, threading, tempfile, time
 
 app = Flask(__name__, static_folder='.')
 
-CHANGES = r"C:\Users\yuchi\openspec\changes"
+_CLAUDE_HOME = r"C:\Users\yuchi\.claude" if os.name == 'nt' else os.path.expanduser("~/.claude")
+CHANGES = (
+    r"C:\Users\yuchi\openspec\changes" if os.name == 'nt'
+    else os.path.join(_CLAUDE_HOME, "openspec", "changes")
+)
 
 # In-memory conversation histories — avoids re-reading log.md and pattern poisoning
 # project -> [{"role": "user"/"assistant", "content": "..."}]
@@ -252,7 +256,7 @@ def chat():
 ## PDF 讀取規則
 
 讀取或分析 .pdf 檔案時，一律先用 Bash 執行預處理腳本：
-python C:\\Users\\yuchi\\.claude\\tools\\read_pdf.py "<PDF路徑>" [--pages 1-5]
+python {os.path.join(_CLAUDE_HOME, 'tools', 'read_pdf.py')} "<PDF路徑>" [--pages 1-5]
 
 ## GitHub Pages 部署位置規則
 
@@ -260,7 +264,7 @@ python C:\\Users\\yuchi\\.claude\\tools\\read_pdf.py "<PDF路徑>" [--pages 1-5]
 
 ## 論文改寫句型規則
 
-對話中提到 thesis-rewrite / 論文改寫 / 論文段落 / 學術寫作 時，先讀 C:\\Users\\yuchi\\.claude\\docs\\thesis-writing-rules.md 再回答。"""
+對話中提到 thesis-rewrite / 論文改寫 / 論文段落 / 學術寫作 時，先讀 {os.path.join(_CLAUDE_HOME, 'docs', 'thesis-writing-rules.md')} 再回答。"""
 
     if history:
         thread = '\n'.join(f'使用者：{u}\n助理：{b}' for u, b in history)
@@ -289,15 +293,23 @@ python C:\\Users\\yuchi\\.claude\\tools\\read_pdf.py "<PDF路徑>" [--pages 1-5]
             env['CLAUDE_SUBPROCESS'] = '1'
             env['PYTHONIOENCODING']  = 'utf-8'
 
-            cmd = [
-                'powershell', '-ExecutionPolicy', 'Bypass', '-Command',
-                '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; '
-                '$OutputEncoding = [System.Text.Encoding]::UTF8; '
-                '$env:CLAUDE_SUBPROCESS = "1"; '
-                f'$sys = Get-Content -Raw -Encoding UTF8 "{sys_path}"; '
-                f'Get-Content -Raw -Encoding UTF8 "{tmp_path}" | '
-                f'& claude --print --dangerously-skip-permissions --system-prompt $sys'
-            ]
+            if os.name == 'nt':
+                cmd = [
+                    'powershell', '-ExecutionPolicy', 'Bypass', '-Command',
+                    '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; '
+                    '$OutputEncoding = [System.Text.Encoding]::UTF8; '
+                    '$env:CLAUDE_SUBPROCESS = "1"; '
+                    f'$sys = Get-Content -Raw -Encoding UTF8 "{sys_path}"; '
+                    f'Get-Content -Raw -Encoding UTF8 "{tmp_path}" | '
+                    f'& claude --print --dangerously-skip-permissions --system-prompt $sys'
+                ]
+            else:
+                script = (
+                    f'source ~/.nvm/nvm.sh 2>/dev/null; '
+                    f'SYSP=$(cat "{sys_path}"); '
+                    f'cat "{tmp_path}" | claude --print --dangerously-skip-permissions --system-prompt "$SYSP"'
+                )
+                cmd = ['bash', '-lc', script]
             proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True, encoding='utf-8', errors='replace', env=env
@@ -357,6 +369,12 @@ def reset_history():
 def spawn():
     d  = request.json
     project_path = os.path.join(CHANGES, d.get('project', ''))
+    if os.name != 'nt':
+        def _unavail():
+            yield f"data: {json.dumps({'t': '子進程功能在 GCP 上尚未支援', 'done': True}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        return Response(_unavail(), mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
     ps = r"C:\Users\yuchi\.claude\tools\spawn-project.ps1"
     cmd = ['powershell', '-ExecutionPolicy', 'Bypass', '-File', ps,
            '-ProjectName', d['project'], '-Task', d['task']]
