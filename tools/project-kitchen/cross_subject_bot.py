@@ -1033,6 +1033,8 @@ if __name__ == "__main__":
             if _subj_acc:
                 _per_concept_acc[_subj] = _subj_acc
         _summary["per_concept_acc"] = _per_concept_acc
+        if _ic == 0:
+            _summary["next_action"] = "系統已就緒，執行 python3 cross_subject_bot.py interactive 開始真實測試，所有心智模型標籤才能發揮作用"
         print(_json.dumps(_summary, ensure_ascii=False))
 
     elif _cmd == "send":
