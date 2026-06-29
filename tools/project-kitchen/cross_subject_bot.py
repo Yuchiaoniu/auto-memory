@@ -925,6 +925,12 @@ def main():
     if not os.path.exists(LOG_PATH):
         append_log(f"# 跨科目學習系統 v5.2\n\n啟動：{now_taipei()}\n\n---\n\n")
     state = load_state()
+    _wd_con = sqlite3.connect(DB_PATH)
+    _wd_ic = _wd_con.execute("SELECT COUNT(*) FROM answers WHERE source='interactive'").fetchone()[0]
+    _wd_con.close()
+    if _wd_ic == 0 and WRONG_OPTIONS:
+        send("⚠️ Watchdog 警告：互動模式從未啟動，144 條心智模型標籤完全閒置。\n"
+             "停止守護進程後，執行 python3 cross_subject_bot.py interactive 啟動互動模式。")
     send(f"跨科目學習 Bot v5.2 啟動\n"
          f"已累積 {state['iteration']} 輪，繼續迭代。\n"
          f"題庫：{sum(len(v) for v in QUESTIONS.values())} 題 / {len(QUESTIONS)} 科\n"
@@ -938,13 +944,14 @@ def main():
         send(f"迭代錯誤：{e}"); print(f"迭代錯誤：{e}")
     while True:
         time.sleep(INTERVAL)
-        try:
-            tg = run_iteration(state)
-            if tg:
-                send(tg)
-            print(f"[{now_taipei().strftime('%H:%M:%S')} 台北] 迭代 #{state['iteration']} 完成")
-        except Exception as e:
-            err = f"迭代錯誤：{e}"; print(err); send(err)
+        for _ in range(2):
+            try:
+                tg = run_iteration(state)
+                if tg:
+                    send(tg)
+                print(f"[{now_taipei().strftime('%H:%M:%S')} 台北] 迭代 #{state['iteration']} 完成")
+            except Exception as e:
+                err = f"迭代錯誤：{e}"; print(err); send(err)
 
 
 if __name__ == "__main__":
@@ -988,6 +995,9 @@ if __name__ == "__main__":
         os.makedirs(OUT_DIR, exist_ok=True)
         init_db()
         _db = query_concept_stats()
+        _con_s = sqlite3.connect(DB_PATH)
+        _ic = _con_s.execute("SELECT COUNT(*) FROM answers WHERE source='interactive'").fetchone()[0]
+        _con_s.close()
         _summary = {}
         for _subj, _concepts in _db.items():
             _weak_names = [c for c, d in _concepts.items() if d["seen"] > 0 and not is_mastered(d) and d["acc"] < 0.6]
@@ -1000,6 +1010,9 @@ if __name__ == "__main__":
                 "weak_names": _weak_names,
                 "almost_mastered": _almost,
             }
+        _summary["interactive_mode_status"] = (
+            f"active（{_ic}筆）" if _ic > 0 else "never_started（所有心智模型標籤閒置）"
+        )
         print(_json.dumps(_summary, ensure_ascii=False))
 
     elif _cmd == "send":
