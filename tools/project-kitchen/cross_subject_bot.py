@@ -1020,6 +1020,10 @@ if __name__ == "__main__":
         _summary["interactive_mode_status"] = (
             f"active（{_ic}筆）" if _ic > 0 else "never_started（所有心智模型標籤閒置）"
         )
+        _summary["data_reliability"] = (
+            f"真實答題{_ic}筆（weak_names 可信）" if _ic > 0
+            else "全為模擬資料（weak_names 不可信，僅供參考）"
+        )
         print(_json.dumps(_summary, ensure_ascii=False))
 
     elif _cmd == "send":
