@@ -10,17 +10,13 @@ CHANGES = (
     else os.path.join(_CLAUDE_HOME, "openspec", "changes")
 )
 
-TRIGGER_DOCS = [
-    (re.compile(r'besu|gcp|vm\b|rpc|節點|私鏈|bootnode|gcloud', re.I),
-     os.path.join('docs', 'besu-reference.md')),
-    (re.compile(r'thesis.rewrite|論文改寫|論文段落|學術寫作', re.I),
-     os.path.join('docs', 'thesis-writing-rules.md')),
-]
+from trigger_rules import TRIGGER_DOCS
 
 # In-memory conversation histories — avoids re-reading log.md and pattern poisoning
 # project -> [{"role": "user"/"assistant", "content": "..."}]
 chat_histories = {}
 active_procs   = {}  # project -> Popen (for stop support)
+_ctx_sent      = set()  # projects that have received initial STATE.md + tasks.md
 
 
 def read_utf8(path, limit=1500):
@@ -180,11 +176,15 @@ def chat():
     state = read_utf8(os.path.join(project_path, 'STATE.md'), limit=2000)
     tasks_raw = read_utf8(os.path.join(project_path, 'tasks.md'), limit=3000)
     pending = [l.strip() for l in tasks_raw.splitlines() if re.match(r'\s*-\s*\[ \]', l)]
+    first_turn = project not in _ctx_sent
+    _ctx_sent.add(project)
+
     parts = []
-    if state:
-        parts.append(f'=== 目前進度（STATE.md）===\n{state.strip()}')
-    if pending:
-        parts.append('=== 待辦任務 ===\n' + '\n'.join(pending[:20]))
+    if first_turn:
+        if state:
+            parts.append(f'=== 目前進度（STATE.md）===\n{state.strip()}')
+        if pending:
+            parts.append('=== 待辦任務 ===\n' + '\n'.join(pending[:20]))
     for extra in get_trigger_docs(user_msg):
         parts.append(extra)
     context = '\n\n'.join(parts)
@@ -403,6 +403,7 @@ def reset_history():
     """清除某專案的 in-memory 歷史（拖出爐子時呼叫）"""
     project = request.json.get('project', '')
     chat_histories.pop(project, None)
+    _ctx_sent.discard(project)
     return jsonify({'ok': True})
 
 

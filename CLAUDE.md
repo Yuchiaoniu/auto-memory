@@ -128,6 +128,41 @@ into the main session.
 - 實際寫入的三個檔案完整路徑
 - 說明下次開啟此專案時，系統會自動讀取哪些檔案（tasks.md、memory.md、STATE.md）
 
+## 主動對話記錄機制（無需使用者指令，嚴格執行）
+
+**每一次回覆結束前，只要這輪對話有實質內容（不是單純打招呼或一問一答），
+必須主動把摘要追加寫進當前專案自己的 `log.md`，不需要使用者說任何指令。**
+
+### log.md 路徑判斷規則
+
+每個專案的 CLAUDE.md 裡都會有一行宣告：
+```
+本專案 log.md 路徑：<完整絕對路徑>
+```
+從已載入的所有 CLAUDE.md 中找到這行宣告，就把摘要寫進那個路徑。
+若當前對話沒有任何 CLAUDE.md 宣告 log.md 路徑，則略過（不猜測路徑）。
+
+### log.md 寫入格式
+
+```
+## YYYY-MM-DD HH:MM
+
+**主題**：這輪討論的核心話題（一句話）
+
+**重點**：
+- 決策或結論 1
+- 決策或結論 2
+- （未解決的問題或下一步）
+
+---
+```
+
+### 維護規則
+
+- log.md 只保留最近 20 條。
+- 超過 20 條時，把最舊的幾條搬進同一專案的 `STATE.md`（附加到最底部），再從 log.md 刪除。
+- 每條記錄必須有日期時間戳記與主題，讓未來的 Claude 一眼就能找到脈絡。
+
 ## 常用腳本指令
 
 當使用者說「請開啟所有未完成的專案」或類似意思，執行：
@@ -162,11 +197,6 @@ python ~/.claude/tools/read_pdf.py "<PDF路徑>" [--pages 1-5]
 
 腳本會輸出乾淨的 Markdown 文字到 stdout，再對該文字進行分析。
 掃描型 PDF 需要另外安裝 Tesseract OCR：https://github.com/UB-Mannheim/tesseract/wiki
-
-## VM 生產檔案修改流程（違反必問使用者）
-
-只要這次對話提到 **staging / SCP 改檔 / 修改 VM 上的檔案 / public/dashboard / push_gh**
-這類關鍵字，就先讀 `~/.claude/docs/vm-file-workflow.md` 再動手。
 
 ## GitHub Pages 部署位置規則
 
