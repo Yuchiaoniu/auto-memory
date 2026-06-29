@@ -116,7 +116,7 @@ body{display:flex;flex-direction:column;overflow:hidden}
 .sm{font-size:.92rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;
     padding:7px 10px;border-radius:8px;user-select:text}
 .sm.user{background:#FEF9C3;border:1px solid #CEAC00;align-self:flex-end;max-width:90%}
-.sm.bot{background:#F5F5F5;border:1px solid #DDD;align-self:flex-start;max-width:95%}
+.sm.bot{background:#FEFCE8;border:1px solid #D4C464;align-self:flex-start;max-width:95%}
 .sstop{background:none;border:1px solid var(--red);color:var(--red);
        border-radius:6px;padding:2px 8px;cursor:pointer;font-size:.78rem;
        flex-shrink:0;opacity:.8}
@@ -288,7 +288,11 @@ function addStoveEvents(container){
     if(window.getSelection().toString().length>0)return;
     if(e.target.closest('.sstop'))return;
     const s=e.target.closest('.sc');
-    if(s&&A.stoves[si(s)])select(si(s));
+    const idx=s?si(s):-1;
+    if(s&&A.stoves[idx]){
+      if(A.sel!==idx)select(idx);
+      else document.getElementById('tin').focus();
+    }
   });
 }
 

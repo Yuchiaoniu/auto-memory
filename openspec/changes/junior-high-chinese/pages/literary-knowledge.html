@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文學常識 - 國中國文學習平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .content-area { max-width: 900px; margin: 0 auto; }
+    .panel { padding: 1.5rem; }
+
+    /* Author card */
+    .author-detail-panel {
+      display: none;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .author-detail-panel.open { display: block; }
+    .author-detail-name { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .author-works-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .author-biography { margin-top: 0.75rem; font-size: 0.95rem; line-height: 1.9; color: #334155; }
+    .author-close-btn { font-size: 0.85rem; color: #64748b; cursor: pointer; margin-top: 0.5rem; display: inline-block; }
+
+    /* Dynasty filter */
+    .dynasty-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .dynasty-btn {
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .dynasty-btn:hover { border-color: var(--primary-light); color: var(--primary); }
+    .dynasty-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* Genre cards */
+    .genre-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .genre-card-header {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .genre-card-body { padding: 1.25rem; font-size: 0.95rem; line-height: 1.9; }
+    .genre-features { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .genre-feature-tag {
+      background: #f1f5f9;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.83rem;
+      color: #475569;
+    }
+
+    /* Timeline */
+    .timeline-wrapper { padding: 0 0 1.5rem 0.5rem; }
+
+    @media (max-width: 600px) {
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="../index.html" class="nav-back">← 首頁</a>
+  <span class="nav-logo">文學常識</span>
+</nav>
+
+<div class="page-hero">
+  <h1>🏛️ 文學常識</h1>
+  <p>作者介紹 · 文體說明 · 朝代時間軸</p>
+</div>
+
+<!-- Module Tabs -->
+<div class="module-tabs" id="module-tabs">
+  <button class="module-tab">作者介紹</button>
+  <button class="module-tab">文體說明</button>
+  <button class="module-tab">朝代時間軸</button>
+</div>
+
+<div class="content-area">
+
+  <!-- Panel 1: Authors -->
+  <div id="panel-authors" class="panel">
+    <!-- Author detail (shows on click) -->
+    <div id="author-detail" class="author-detail-panel">
+      <div class="author-detail-name" id="detail-name"></div>
+      <div style="font-size:0.88rem;color:#64748b;margin-top:0.2rem;" id="detail-period"></div>
+      <div class="author-works-list" id="detail-works"></div>
+      <div id="detail-status" style="margin-top:0.6rem;font-size:0.88rem;color:#475569;font-style:italic;"></div>
+      <div class="author-biography" id="detail-bio"></div>
+      <span class="author-close-btn" onclick="closeAuthorDetail()">✕ 關閉</span>
+    </div>
+
+    <!-- Dynasty filter -->
+    <div class="dynasty-filter" id="dynasty-filter">
+      <button class="dynasty-btn active" data-dynasty="all">全部朝代</button>
+    </div>
+
+    <!-- Author cards -->
+    <div class="card-grid" id="authors-grid" style="padding:0;"></div>
+  </div>
+
+  <!-- Panel 2: Genre -->
+  <div id="panel-genre" class="panel">
+    <div id="genre-container">
+      <div class="loading">載入中…</div>
+    </div>
+  </div>
+
+  <!-- Panel 3: Timeline -->
+  <div id="panel-timeline" class="panel">
+    <div class="timeline-wrapper">
+      <div class="timeline" id="timeline-container">
+        <div class="loading">載入中…</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+const TIMELINE_DATA = [
+  { era: '先秦', period: '約西元前 11世紀—221年', desc: '詩經、楚辭奠基，《論語》、《莊子》等哲學散文盛行，是中國文學的源頭。', authors: ['孔子'], color: '#dc2626' },
+  { era: '兩漢', period: '西元前 206—西元 220年', desc: '樂府民歌興起，《史記》、《漢書》確立史傳文學，賦體文學繁榮。', authors: [], color: '#d97706' },
+  { era: '魏晉南北朝', period: '220—589年', desc: '五言詩發展成熟，陶淵明田園詩、「建安文學」各具特色。', authors: ['陶淵明'], color: '#16a34a' },
+  { era: '唐', period: '618—907年', desc: '詩歌黃金時代，李白、杜甫、王維、白居易等大家輩出，古文運動興起。', authors: ['李白', '杜甫', '韓愈', '柳宗元'], color: '#2563eb' },
+  { era: '宋', period: '960—1279年', desc: '詞達到藝術巔峰，蘇軾、辛棄疾豪放詞與李清照婉約詞並立，古文散文繁榮。', authors: ['歐陽修', '范仲淹', '蘇軾', '王安石', '文天祥'], color: '#7c3aed' },
+  { era: '元', period: '1271—1368年', desc: '元曲（雜劇與散曲）興起，關漢卿、王實甫等劇作家聞名後世。', authors: [], color: '#0891b2' },
+  { era: '明', period: '1368—1644年', desc: '長篇小說成就卓著（四大名著中的三部），戲曲繼續發展。', authors: [], color: '#ea580c' },
+  { era: '清', period: '1644—1912年', desc: '《紅樓夢》問世，考證學興盛，詩詞延續發展，散文亦有成就。', authors: [], color: '#9333ea' }
+];
+
+const GENRE_DATA = [
+  {
+    name: '記敘文', icon: '📝', color: '#2563eb',
+    definition: '以敘述人物、事件、地點、時間為主的文章，透過具體的描寫呈現生活的真實面貌，傳遞作者的情感或思想。',
+    features: ['六要素：時、地、人、事、因、果', '描寫手法：外貌、動作、語言、心理', '順敘、倒敘、插敘三種敘述順序', '首尾呼應的結構技巧'],
+    purpose: '以情感人，引起讀者的共鳴與思考。'
+  },
+  {
+    name: '說明文', icon: '📊', color: '#16a34a',
+    definition: '以客觀、準確的語言說明事物的特徵、原理、方法或現象，使讀者獲得清晰正確的認識。',
+    features: ['說明手法：舉例、引用、數據、比較、分類', '條理清晰，邏輯嚴謹', '語言客觀，避免主觀情感', '常用說明順序：時間、空間、邏輯'],
+    purpose: '傳遞知識，讓讀者了解事物的本質或原理。'
+  },
+  {
+    name: '議論文', icon: '⚖️', color: '#dc2626',
+    definition: '以論點、論據、論證三要素為核心，透過邏輯推理說服讀者接受作者的觀點或主張。',
+    features: ['三要素：論點（主張）、論據（依據）、論證（推理）', '論證方法：舉例、引用、對比、駁論', '結構：提出問題→分析問題→解決問題', '語言嚴謹，觀點明確'],
+    purpose: '以理服人，影響讀者的觀念或行為。'
+  },
+  {
+    name: '詩詞', icon: '🌸', color: '#7c3aed',
+    definition: '以精煉的語言、優美的節奏和豐富的意象傳遞情感，是中國文學中最古老也最精緻的文體。',
+    features: ['律詩：格律嚴謹，講求對仗與押韻', '絕句：四句，有五言和七言之分', '詞：依詞牌填寫，長短句', '意象：以具體物象表達抽象情感'],
+    purpose: '抒情言志，以凝練的語言傳遞最深刻的感受。'
+  },
+  {
+    name: '古文（散文）', icon: '📜', color: '#d97706',
+    definition: '先秦至清代的文言散文，包括記事、議論、抒情等多種類型，是中國傳統文學的重要組成部分。',
+    features: ['用字精煉，言簡意賅', '常使用通假字、詞類活用等文言語法', '虛詞（之、乎、者、也）運用靈活', '常見文體：記、傳、序、表、賦'],
+    purpose: '記史述志，傳遞儒家道德觀念與歷史文化。'
+  }
+];
+
+let authors = [];
+let filteredAuthors = [];
+
+function openAuthorDetail(author) {
+  const panel = document.getElementById('author-detail');
+  document.getElementById('detail-name').textContent = author.name;
+  document.getElementById('detail-period').textContent = `${author.dynasty}代（${author.period || author.dynasty}）`;
+  document.getElementById('detail-works').innerHTML = author.representative_works.map(w =>
+    `<span class="badge badge-blue">${w}</span>`
+  ).join('');
+  document.getElementById('detail-status').textContent = author.literary_status;
+  document.getElementById('detail-bio').textContent = author.biography;
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeAuthorDetail() {
+  document.getElementById('author-detail').classList.remove('open');
+}
+
+function renderAuthors(list) {
+  const grid = document.getElementById('authors-grid');
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>此朝代暫無作者資料</p></div>';
+    return;
+  }
+  grid.innerHTML = list.map(a => `
+    <div class="author-card" onclick='openAuthorDetail(${JSON.stringify(a)})'>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;">
+        <div>
+          <div class="author-name">${a.name}</div>
+          <div class="author-dynasty">${a.dynasty}代・${a.period || a.dynasty}</div>
+        </div>
+        <span class="badge badge-gold">${a.dynasty}</span>
+      </div>
+      <div class="author-works" style="margin-top:0.6rem;">
+        ${a.representative_works.slice(0,3).join('・')}
+      </div>
+      <div style="font-size:0.82rem;color:#64748b;margin-top:0.4rem;line-height:1.6;">${a.literary_status}</div>
+    </div>
+  `).join('');
+}
+
+function renderGenre() {
+  document.getElementById('genre-container').innerHTML = GENRE_DATA.map(g => `
+    <div class="genre-card">
+      <div class="genre-card-header">
+        <span style="font-size:1.3rem;">${g.icon}</span>
+        <span style="font-size:1.05rem;font-weight:700;">${g.name}</span>
+      </div>
+      <div class="genre-card-body">
+        <p style="margin:0 0 0.75rem;color:#334155;">${g.definition}</p>
+        <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.5rem;color:#475569;">主要特色</div>
+        <div class="genre-features">
+          ${g.features.map(f => `<span class="genre-feature-tag">${f}</span>`).join('')}
+        </div>
+        <div style="margin-top:0.75rem;padding:0.6rem 0.85rem;background:#f8fafc;border-radius:6px;font-size:0.88rem;color:#64748b;">
+          <b>寫作目的：</b>${g.purpose}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTimeline() {
+  document.getElementById('timeline-container').innerHTML = TIMELINE_DATA.map(t => `
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:${t.color};box-shadow:0 0 0 2px ${t.color};"></div>
+      <div class="timeline-content" onclick="this.classList.toggle('open')">
+        <div class="timeline-era" style="color:${t.color};">${t.era}（${t.period}）</div>
+        <div class="timeline-desc">
+          <p style="margin:0.5rem 0 0.5rem;font-size:0.9rem;">${t.desc}</p>
+          ${t.authors.length ? `<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">${t.authors.map(a => `<span class="badge badge-blue">${a}</span>`).join('')}</div>` : ''}
+        </div>
+        <span style="font-size:0.75rem;color:#94a3b8;margin-top:0.2rem;display:block;">點擊展開詳情</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function init() {
+  // Setup panels
+  const tabs = document.getElementById('module-tabs');
+  const panels = [
+    document.getElementById('panel-authors'),
+    document.getElementById('panel-genre'),
+    document.getElementById('panel-timeline')
+  ];
+  initModuleTabs(tabs, panels);
+
+  // Load authors
+  try {
+    authors = await loadData('authors.json');
+    filteredAuthors = authors;
+
+    // Build dynasty filter
+    const dynasties = [...new Set(authors.map(a => a.dynasty))];
+    const filterEl = document.getElementById('dynasty-filter');
+    dynasties.forEach(d => {
+      const btn = document.createElement('button');
+      btn.className = 'dynasty-btn';
+      btn.dataset.dynasty = d;
+      btn.textContent = d;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.dynasty-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filteredAuthors = d === 'all' ? authors : authors.filter(a => a.dynasty === d);
+        renderAuthors(filteredAuthors);
+        closeAuthorDetail();
+      });
+      filterEl.appendChild(btn);
+    });
+
+    renderAuthors(authors);
+  } catch(e) {
+    showError(document.getElementById('authors-grid'), '作者資料載入失敗');
+  }
+
+  // Render genre & timeline (static)
+  renderGenre();
+  renderTimeline();
+
+  // Check if came from author link
+  const authorParam = getParam('author');
+  if (authorParam && authors.length) {
+    const found = authors.find(a => a.id === authorParam);
+    if (found) openAuthorDetail(found);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

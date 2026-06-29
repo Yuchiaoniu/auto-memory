@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>修辭技巧 - 國中國文學習平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .content-area { max-width: 860px; margin: 0 auto; }
+    .panel { padding: 1.5rem; }
+
+    /* Rhetoric card */
+    .rhetoric-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .rhetoric-card-header {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .rhetoric-card-header:hover { background: #f8fafc; }
+    .rhetoric-card-header.open { background: #eff6ff; }
+    .rhetoric-name { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .rhetoric-def-short { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; max-width: 80%; }
+    .rhetoric-toggle { color: var(--text-muted); transition: transform 0.25s; }
+    .rhetoric-card-header.open .rhetoric-toggle { transform: rotate(180deg); }
+
+    .rhetoric-card-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .rhetoric-card-body.open { max-height: 3000px; }
+    .rhetoric-body-inner { padding: 1rem 1.25rem 1.25rem; border-top: 1px solid var(--border); }
+
+    .rhetoric-key-points {
+      background: #fef3c7;
+      border-left: 3px solid #fbbf24;
+      padding: 0.75rem 1rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      margin-bottom: 1rem;
+    }
+    .rhetoric-types { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .rhetoric-type-item {
+      background: #f8fafc;
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.85rem;
+      font-size: 0.88rem;
+    }
+    .rhetoric-type-name { font-weight: 700; color: var(--primary); }
+    .example-item {
+      background: #f0fdf4;
+      border-left: 3px solid #22c55e;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+    }
+    .example-sentence { font-weight: 600; line-height: 1.8; }
+    .example-explanation { color: #374151; margin-top: 0.25rem; line-height: 1.7; }
+
+    /* Quiz */
+    .quiz-container { max-width: 700px; margin: 0 auto; }
+    .quiz-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .quiz-sentence {
+      font-size: 1.05rem;
+      line-height: 2;
+      padding: 0.85rem 1rem;
+      background: #f8fafc;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+    .quiz-feedback {
+      margin-top: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      line-height: 1.7;
+      display: none;
+    }
+    .quiz-feedback.correct { background: #dcfce7; color: #166534; display: block; }
+    .quiz-feedback.wrong { background: #fee2e2; color: #991b1b; display: block; }
+
+    .quiz-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .quiz-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+    }
+    .quiz-progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.3s;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .quiz-result-box {
+      text-align: center;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      display: none;
+    }
+    .quiz-result-box.show { display: block; }
+    .quiz-score-big { font-size: 3rem; font-weight: 700; color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="../index.html" class="nav-back">← 首頁</a>
+  <span class="nav-logo">修辭技巧</span>
+</nav>
+
+<div class="page-hero">
+  <h1>✍️ 修辭技巧</h1>
+  <p>10 種修辭法說明庫 · 30 題辨識練習</p>
+</div>
+
+<div class="module-tabs" id="module-tabs">
+  <button class="module-tab">修辭說明庫</button>
+  <button class="module-tab">辨識練習</button>
+</div>
+
+<div class="content-area">
+
+  <!-- Panel 1: Rhetoric Library -->
+  <div id="panel-library" class="panel">
+    <div id="rhetoric-list">
+      <div class="loading">載入中…</div>
+    </div>
+  </div>
+
+  <!-- Panel 2: Quiz -->
+  <div id="panel-quiz" class="panel">
+    <div class="quiz-container">
+
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-current">0</div>
+          <div class="stat-label">第幾題</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-correct">0</div>
+          <div class="stat-label">答對</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-total">10</div>
+          <div class="stat-label">共幾題</div>
+        </div>
+      </div>
+
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+
+      <div id="quiz-card" class="quiz-card" style="display:none;">
+        <div id="quiz-sentence" class="quiz-sentence"></div>
+        <div id="quiz-options"></div>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+        <div style="text-align:right;margin-top:1rem;">
+          <button class="btn btn-primary" id="next-btn" style="display:none;" onclick="nextQuestion()">下一題 →</button>
+        </div>
+      </div>
+
+      <div id="quiz-result" class="quiz-result-box">
+        <div class="quiz-score-big" id="result-score"></div>
+        <div style="color:#64748b;margin-top:0.5rem;font-size:0.95rem;" id="result-msg"></div>
+        <button class="btn btn-primary" style="margin-top:1.5rem;" onclick="startQuiz()">再來一次</button>
+      </div>
+
+      <div id="quiz-start" style="text-align:center;padding:2rem;">
+        <div style="font-size:2rem;margin-bottom:1rem;">🎯</div>
+        <div style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">修辭辨識測驗</div>
+        <div style="font-size:0.9rem;color:#64748b;margin-bottom:1.5rem;">每次隨機出 10 題，練習辨識 10 種修辭法</div>
+        <button class="btn btn-primary" onclick="startQuiz()">開始測驗</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+let rhetoricData = [];
+let quizData = [];
+let quizQueue = [];
+let currentQ = 0;
+let correctCount = 0;
+const QUIZ_COUNT = 10;
+
+function renderLibrary(data) {
+  document.getElementById('rhetoric-list').innerHTML = data.map((r, i) => `
+    <div class="rhetoric-card">
+      <div class="rhetoric-card-header" onclick="toggleRhetoric(${i})">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.6rem;">
+            <span class="badge badge-blue">${String(i+1).padStart(2,'0')}</span>
+            <span class="rhetoric-name">${r.name}</span>
+          </div>
+          <div class="rhetoric-def-short">${r.definition.slice(0,40)}…</div>
+        </div>
+        <span class="rhetoric-toggle">▼</span>
+      </div>
+      <div class="rhetoric-card-body" id="rhetoric-body-${i}">
+        <div class="rhetoric-body-inner">
+          <p style="margin:0 0 0.75rem;font-size:0.95rem;line-height:1.8;">${r.definition}</p>
+
+          <div class="rhetoric-key-points">
+            <b>⚠️ 判斷要點</b><br>${r.key_points}
+          </div>
+
+          ${r.types.length ? `
+          <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.5rem;color:#475569;">分類</div>
+          <div class="rhetoric-types">
+            ${r.types.map(t => `
+              <div class="rhetoric-type-item">
+                <span class="rhetoric-type-name">${t.name}：</span>
+                <span>${t.description}</span>
+                <div style="margin-top:0.3rem;color:#0f766e;font-style:italic;">${t.example}</div>
+              </div>
+            `).join('')}
+          </div>` : ''}
+
+          <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.5rem;color:#475569;">例句</div>
+          ${r.examples.map(e => `
+            <div class="example-item">
+              <div class="example-sentence">${e.sentence}</div>
+              <div class="example-explanation">${e.explanation}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleRhetoric(i) {
+  const header = document.querySelector(`.rhetoric-card:nth-child(${i+1}) .rhetoric-card-header`);
+  const body = document.getElementById(`rhetoric-body-${i}`);
+  header.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  quizQueue = shuffle(quizData).slice(0, QUIZ_COUNT);
+  currentQ = 0;
+  correctCount = 0;
+  document.getElementById('quiz-start').style.display = 'none';
+  document.getElementById('quiz-result').classList.remove('show');
+  document.getElementById('quiz-card').style.display = 'block';
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = quizQueue[currentQ];
+  document.getElementById('stat-current').textContent = currentQ + 1;
+  document.getElementById('stat-correct').textContent = correctCount;
+  document.getElementById('progress-fill').style.width = `${(currentQ / QUIZ_COUNT) * 100}%`;
+  document.getElementById('quiz-sentence').textContent = q.sentence;
+  document.getElementById('quiz-feedback').className = 'quiz-feedback';
+  document.getElementById('next-btn').style.display = 'none';
+
+  document.getElementById('quiz-options').innerHTML = q.options.map(opt => `
+    <button class="quiz-option" onclick="selectAnswer(this, '${opt}', '${q.answer}', \`${q.explanation.replace(/`/g, "'")}\`)">
+      ${opt}
+    </button>
+  `).join('');
+}
+
+function selectAnswer(btn, selected, answer, explanation) {
+  // Disable all
+  document.querySelectorAll('.quiz-option').forEach(b => {
+    b.disabled = true;
+    if (b.textContent.trim() === answer) b.classList.add('correct');
+  });
+
+  const feedback = document.getElementById('quiz-feedback');
+  if (selected === answer) {
+    btn.classList.add('correct');
+    correctCount++;
+    document.getElementById('stat-correct').textContent = correctCount;
+    feedback.className = 'quiz-feedback correct';
+    feedback.textContent = '✓ 正確！' + explanation;
+  } else {
+    btn.classList.add('wrong');
+    feedback.className = 'quiz-feedback wrong';
+    feedback.textContent = `✗ 答案是「${answer}」。${explanation}`;
+  }
+
+  document.getElementById('next-btn').style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= QUIZ_COUNT) {
+    showResult();
+  } else {
+    showQuestion();
+  }
+}
+
+function showResult() {
+  document.getElementById('quiz-card').style.display = 'none';
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('stat-current').textContent = QUIZ_COUNT;
+
+  const result = document.getElementById('quiz-result');
+  document.getElementById('result-score').textContent = `${correctCount} / ${QUIZ_COUNT}`;
+  const pct = Math.round((correctCount / QUIZ_COUNT) * 100);
+  const msgs = [
+    [90, '🎉 優秀！修辭辨識能力相當強！'],
+    [70, '👍 不錯！再練習幾次就更好了'],
+    [50, '📚 繼續加油！回去複習說明庫再試一次'],
+    [0, '💪 先仔細閱讀修辭說明庫，再來挑戰！']
+  ];
+  document.getElementById('result-msg').textContent = msgs.find(([min]) => pct >= min)[1];
+  result.classList.add('show');
+}
+
+async function init() {
+  const tabs = document.getElementById('module-tabs');
+  const panels = [document.getElementById('panel-library'), document.getElementById('panel-quiz')];
+  initModuleTabs(tabs, panels);
+
+  try {
+    [rhetoricData, quizData] = await Promise.all([
+      loadData('rhetoric.json'),
+      loadData('rhetoric-quiz.json')
+    ]);
+    renderLibrary(rhetoricData);
+  } catch(e) {
+    showError(document.getElementById('rhetoric-list'));
+  }
+}
+
+init();
+</script>
+</body>
+</html>

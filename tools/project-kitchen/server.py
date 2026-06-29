@@ -32,14 +32,17 @@ def read_utf8_tail(path, limit=50000):
 
 def _parse_log_turns(content, n=8):
     turns = []
-    for sec in content.split('\n---\n'):
-        sec = sec.strip()
-        if not sec:
+    parts = re.split(r'\n(?=## \d{4}-\d{2}-\d{2} \d{2}:\d{2})', content)
+    for part in parts:
+        part = part.strip()
+        if not part:
             continue
-        um = re.search(r'\*\*使用者\*\*：(.+?)(?=\*\*Claude\*\*：|\Z)', sec, re.DOTALL)
-        cm = re.search(r'\*\*Claude\*\*：(.+?)$', sec, re.DOTALL)
+        um = re.search(r'\*\*使用者\*\*：(.+?)(?=\*\*Claude\*\*：|\Z)', part, re.DOTALL)
+        cm = re.search(r'\*\*Claude\*\*：(.+)', part, re.DOTALL)
         if um and cm:
-            turns.append({'user': um.group(1).strip(), 'bot': cm.group(1).strip()})
+            user_text = um.group(1).strip()
+            bot_text = re.sub(r'\n+---\s*$', '', cm.group(1)).strip()
+            turns.append({'user': user_text, 'bot': bot_text})
     return turns[-n:] if len(turns) > n else turns
 
 def _log_since_last_impl(content):

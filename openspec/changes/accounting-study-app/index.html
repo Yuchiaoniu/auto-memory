@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>會計學練習題</title>
+<style>
+  :root {
+    --ch04: #3b82f6;
+    --ch05: #10b981;
+    --ch06: #f59e0b;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', '微軟正黑體', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 24px 16px 60px;
+  }
+  header { text-align: center; margin-bottom: 22px; }
+  header h1 { font-size: 1.8rem; font-weight: 700; }
+  header p  { color: var(--muted); margin-top: 4px; font-size: 0.95rem; }
+
+  /* Tabs */
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
+  .tab-btn {
+    padding: 9px 30px; border: 2px solid var(--border); border-radius: 8px;
+    background: white; color: var(--muted); font-size: 0.95rem;
+    cursor: pointer; font-weight: 600; transition: all .15s;
+  }
+  .tab-btn:hover { border-color: #94a3b8; color: var(--text); }
+  .tab-btn.active { background: var(--text); border-color: var(--text); color: white; }
+
+  /* Chapter filter */
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 28px; }
+  .filter-btn {
+    padding: 7px 20px; border: 2px solid var(--border); border-radius: 999px;
+    background: white; color: var(--muted); font-size: 0.88rem;
+    cursor: pointer; font-weight: 500; transition: all .15s;
+  }
+  .filter-btn:hover { border-color: #94a3b8; color: var(--text); }
+  .filter-btn.active[data-ch="all"]  { background: var(--text);  border-color: var(--text);  color: white; }
+  .filter-btn.active[data-ch="Ch04"] { background: var(--ch04);  border-color: var(--ch04);  color: white; }
+  .filter-btn.active[data-ch="Ch05"] { background: var(--ch05);  border-color: var(--ch05);  color: white; }
+  .filter-btn.active[data-ch="Ch06"] { background: var(--ch06);  border-color: var(--ch06);  color: white; }
+
+  /* Card common */
+  .problems { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 26px 28px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .card.hidden { display: none; }
+  .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .chapter-tag {
+    display: inline-block; padding: 3px 11px; border-radius: 999px;
+    font-size: 0.77rem; font-weight: 700; letter-spacing: .04em; flex-shrink: 0;
+  }
+  .tag-ch04 { background: #dbeafe; color: var(--ch04); }
+  .tag-ch05 { background: #d1fae5; color: #059669; }
+  .tag-ch06 { background: #fef3c7; color: #b45309; }
+  .card-title { font-size: 1rem; font-weight: 700; }
+  .card-subtitle { font-size: 0.84rem; color: var(--muted); margin-bottom: 12px; font-style: italic; }
+
+  /* Practice problem */
+  .problem-desc {
+    background: #f1f5f9; border-left: 4px solid #cbd5e1;
+    border-radius: 0 6px 6px 0; padding: 11px 15px;
+    font-size: 0.92rem; color: #334155; margin-bottom: 14px;
+  }
+  .problem-body { font-size: 0.94rem; margin-bottom: 16px; }
+  .sub-items { list-style: none; padding-left: 10px; margin-top: 5px; }
+  .sub-items li { padding: 3px 0; display: flex; gap: 8px; }
+  .sub-items li .num { flex-shrink: 0; font-weight: 600; color: var(--muted); min-width: 26px; }
+  .transaction-table { width: 100%; border-collapse: collapse; font-size: 0.89rem; margin-bottom: 6px; }
+  .transaction-table th { background: #f1f5f9; padding: 7px 10px; text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .transaction-table td { padding: 7px 10px; border-bottom: 1px solid #f8fafc; vertical-align: top; }
+  .transaction-table tr:last-child td { border-bottom: none; }
+  .date-cell { white-space: nowrap; font-weight: 600; color: var(--ch05); }
+  .ask-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+  .answer-area {
+    width: 100%; min-height: 120px; border: 1.5px solid var(--border);
+    border-radius: 6px; padding: 11px; font-family: inherit; font-size: 0.91rem;
+    color: var(--text); resize: vertical; background: #fafafa; transition: border-color .15s;
+  }
+  .answer-area:focus { outline: none; border-color: #94a3b8; background: white; }
+  .answer-area::placeholder { color: #cbd5e1; }
+
+  /* MC */
+  .mc-question { font-size: 0.96rem; margin-bottom: 14px; line-height: 1.65; }
+  .mc-options { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+  .mc-options li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 13px; border: 1.5px solid var(--border);
+    border-radius: 7px; font-size: 0.92rem; transition: border-color .12s, background .12s;
+  }
+  .mc-options li:hover { border-color: #94a3b8; background: #f8fafc; }
+  .mc-opt-label { flex-shrink: 0; font-weight: 700; width: 20px; color: var(--muted); }
+  .mc-data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .mc-data-table th { background: #f1f5f9; padding: 8px 14px; text-align: left; font-weight: 600; color: var(--muted); font-size: 0.85rem; }
+  .mc-data-table td { padding: 8px 14px; border-top: 1px solid var(--border); }
+  .mc-data-table td:last-child { text-align: right; font-weight: 600; }
+  .mc-data-table .is-q { color: #ef4444; font-weight: 700; }
+  .my-answer-row { display: flex; align-items: center; gap: 10px; }
+  .my-answer-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+  .my-answer-input {
+    width: 58px; padding: 5px 10px; border: 1.5px solid var(--border);
+    border-radius: 6px; font-size: 1rem; font-weight: 700; text-align: center;
+    color: var(--ch04); font-family: inherit; text-transform: uppercase; transition: border-color .15s;
+  }
+  .my-answer-input:focus { outline: none; border-color: var(--ch04); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>會計學練習題</h1>
+  <p>Ch04 調整分錄 &nbsp;·&nbsp; Ch05 永續盤存 &nbsp;·&nbsp; Ch06 定期盤存</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="practice">練習題</button>
+  <button class="tab-btn" data-tab="mc">選擇題</button>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" data-ch="all">全部</button>
+  <button class="filter-btn" data-ch="Ch04">Ch04 調整分錄</button>
+  <button class="filter-btn" data-ch="Ch05">Ch05 永續盤存</button>
+  <button class="filter-btn" data-ch="Ch06">Ch06 定期盤存</button>
+</div>
+
+<div class="problems" id="practice-section"></div>
+<div class="problems" id="mc-section" style="display:none"></div>
+
+<script>
+/* ─── Practice Problems ─── */
+const PROBLEMS = [
+  {
+    chapter:"Ch04", no:"4-1", title:"調整分錄的類型",
+    subtitle:"Mini 公司 20×1 年 12 月 31 日調整分錄",
+    desc:"Mini 公司於 20×1 年 12 月 31 日計有下列調整分錄。試作：請說明上述調整分錄所屬之類型（預付費用、預收收入、應計收入或應計費用），並做有關調整分錄。",
+    bodyType:"list",
+    items:[
+      "尚未支付電信費 $13,000。",
+      "已使用先前購入之辦公用品 $30,000。",
+      "已提供客戶服務但尚未記帳之金額有 $174,000。",
+      "預收收入中有 $38,000 可認列為收入。",
+      "預付保險費中有 $24,000 已到期。",
+      "尚未支付薪資 $90,000。",
+      "辦公設備今年度折舊金額 $18,000。"
+    ]
+  },
+  {
+    chapter:"Ch04", no:"4-2", title:"調整分錄",
+    subtitle:"試依下列情況做 ×1 年底調整分錄",
+    desc:"試依下列情況做 ×1 年底調整分錄。",
+    bodyType:"list",
+    items:[
+      "×1 年 5 月 1 日預付一年房租 $36,000。",
+      "×1 年初辦公用品的餘額為 $1,000，同年又購入 $6,000（以辦公用品項目入帳），期末尚餘 $2,000。",
+      "×1 年 12 月 1 日收到客戶支付的 12 月份到 ×2 年 3 月份的管理費 $20,000，當時以預收管理費收入入帳。",
+      "應收未收的利息收入為 $1,000。",
+      "×1 年 12 月 1 日向銀行借款 $100,000，開給一張期間 3 個月，附息 6% 的票據。"
+    ]
+  },
+  {
+    chapter:"Ch04", no:"4-3", title:"記錄調整分錄",
+    subtitle:"試依下列情況做 ×1 年底調整分錄",
+    desc:"試依下列情況做 ×1 年底調整分錄。",
+    bodyType:"list",
+    items:[
+      "×1 年 8 月 1 日預付一年保險費用 $18,000，當時以預付保險費入帳。",
+      "×1 年初辦公用品的餘額為 $1,800，同年又購入 $4,000（以辦公用品項目入帳），期末尚餘 $3,000 未耗用。",
+      "×1 年 10 月 1 日預收 1 年的客戶電腦維護費用 $9,000（預收電腦維護收入）。",
+      "對張三的服務已完成，金額為 $6,000，但尚未收到錢也未入帳。",
+      "×1 年年底收到水電費用帳單 $800，但尚未入帳亦未支付。"
+    ]
+  },
+  {
+    chapter:"Ch05", no:"5-1", title:"永續盤存制——記錄日記簿分錄",
+    subtitle:"三商禮品店 6 月份交易",
+    desc:"三商禮品店 6 月份發生的交易如下。試作：記錄三商禮品店 6 月份之交易分錄。",
+    bodyType:"transactions",
+    transactions:[
+      { date:"6/2",  content:"賒購存貨 $43,000，購買條款為起運點交貨（FOB shipping point），付款條件 1/10, n/eom。" },
+      { date:"6/7",  content:"退還 6/2 賒購之存貨瑕疵品 $5,000。" },
+      { date:"6/8",  content:"現金支付 6/2 賒購存貨之運費 $600。" },
+      { date:"6/9",  content:"賒銷商品 $78,000，付款條件 2/15, n/30，有關商品成本為 $44,000。" },
+      { date:"6/11", content:"支付 6/2 賒購存貨之所有貨款。" },
+      { date:"6/16", content:"針對 6/9 賒銷商品給予銷貨折讓 $16,000。" },
+      { date:"6/23", content:"收到 6/9 賒銷商品之所有貨款。" }
+    ]
+  },
+  {
+    chapter:"Ch06", no:"6-1", title:"存貨——定期盤存（實地盤點）",
+    subtitle:"櫻桃之家「哆啦 A 夢抱枕」×6 年度進銷貨",
+    desc:"採用實地盤存制（定期盤存），根據下列 ×6 年度資料作相關分錄。",
+    bodyType:"list",
+    items:[
+      "期初存貨：180 件，@$150。",
+      "賒購商品：3,000 件，@$150。",
+      "賒銷商品：2,500 件，售價為成本之 170%。",
+      "期末實地盤得存貨為 677 件。"
+    ]
+  }
+];
+
+/* ─── MC Problems ─── */
+const MC = [
+  /* ── Ch04 選1–11 ── */
+  {
+    chapter:"Ch04", no:"選1",
+    q:"下列有關調整分錄的敘述，何者為真？",
+    opts:["編製財務報表前，必須先編製調整分錄","編製調整分錄的目的為了更正（記帳）錯誤","編製調整後試算表包含資產、負債與權益三大類的會計項目","編製調整分錄與平日記錄交易的分錄格式不同"]
+  },
+  {
+    chapter:"Ch04", no:"選2",
+    q:"「無論現金已否收付，只要交易已存在，而有義務或權利發生，就必須記錄」，描述的是哪一種會計基礎？",
+    opts:["現金基礎","應計基礎","混合基礎","修正現金基礎"]
+  },
+  {
+    chapter:"Ch04", no:"選3",
+    q:"下列何者為滿足收入認列的要件？",
+    opts:["交易的金額無法合理衡量","收到現金且金額明確，但來自銀行貸款","金額明確，雖未立即收現但有可能於以後收到，且滿足履約義務","以上皆是"]
+  },
+  {
+    chapter:"Ch04", no:"選4",
+    q:"保時捷公司於 7 月 31 日為客戶車輛完成維修服務並於當天取車，客戶於 8 月 1 日簽發支票與公司，公司於 8 月 5 日收到此支票，8 月 6 日支票兌現，請問公司應何時認列服務收入？",
+    opts:["7 月 31 日","8 月 1 日","8 月 5 日","8 月 6 日"]
+  },
+  {
+    chapter:"Ch04", no:"選5",
+    q:"一個調整分錄對於會計項目有何影響？",
+    opts:["會影響兩個資產負債表項目","會影響兩個綜合損益表項目","會影響一個資產負債表項目，與一個綜合損益表項目","其格式與平日記錄交易的分錄格式不同"]
+  },
+  {
+    chapter:"Ch04", no:"選6",
+    q:"預收收益中，已實現之部分屬於什麼性質的會計項目？",
+    opts:["費用性質","收益性質","資產性質","負債性質"]
+  },
+  {
+    chapter:"Ch04", no:"選7",
+    q:"工作底稿中調整前試算表欄的資訊可由何處取得？",
+    opts:["財務報表","總分類帳","綜合損益表","調整日記帳"]
+  },
+  {
+    chapter:"Ch04", no:"選8",
+    q:"結帳後費類帳戶的餘額為何？",
+    opts:["貸方餘額","借方餘額","借方或貸方均可","沒有餘額"]
+  },
+  {
+    chapter:"Ch04", no:"選9",
+    q:"借記服務收入、貸記本期損益應屬於何種分錄？",
+    opts:["開帳分錄","混合分錄","調整分錄","結帳分錄"]
+  },
+  {
+    chapter:"Ch04", no:"選10",
+    q:"期末調整前預收收入為 $45,000，預付費用為 $8,000，經調整後，預收收入為 $30,000，預付費用為 $3,000，此兩個調整事項，對淨利的影響如何？",
+    opts:["淨利減少 $10,000","淨利增加 $10,000","淨利減少 $20,000","淨利增加 $20,000"]
+  },
+  {
+    chapter:"Ch04", no:"選11",
+    q:"華航依正常慣例出售一張機票給客戶，這個組合包括多少項履約義務？",
+    opts:[
+      "一項（因所有提供之運送、機上電影及餐飲均不可區分，視為一整體）",
+      "二項（因運送與機上電影節目均不可區分）",
+      "三項（因運送、機上餐飲及機上電影節目均可區分）",
+      "以上皆非"
+    ]
+  },
+  /* ── Ch05 選1,3,4,7,8,11,14 ── */
+  {
+    chapter:"Ch05", no:"選1",
+    q:"在永續盤存制下，銷貨成本決定的基礎為下列何者？",
+    opts:["每日之基礎","每月之基礎","每年之基礎","每一筆銷貨時"]
+  },
+  {
+    chapter:"Ch05", no:"選3",
+    q:"銷貨退回與折讓帳戶，其性質屬於：",
+    opts:["資產帳戶","收益對銷帳戶（抵銷科目）","費用帳戶","負債帳戶"]
+  },
+  {
+    chapter:"Ch05", no:"選4",
+    q:"銷貨退回與折讓帳戶的正常餘額在：",
+    opts:["借方","貸方","借方或貸方均可","無正常餘額"]
+  },
+  {
+    chapter:"Ch05", no:"選7",
+    q:"中興百貨公司（買方）向太陽公司（賣方）訂購貨品，並簽訂起運點交貨（FOB shipping point）條款，此遭退回之貨物在被送回時，運費應由哪一方負擔？",
+    opts:["買方","賣方","買方或賣方均可","沒有固定規定"]
+  },
+  {
+    chapter:"Ch05", no:"選8",
+    q:"路特單公司以發票購入 $600,000 之貨物，付款條件為 1/10, n/30，假定超過 10 天後方付現金，則此交易應支付金額為多少？",
+    opts:["$594,000","$600,000","$606,000","$6,000"]
+  },
+  {
+    chapter:"Ch05", no:"選11",
+    q:"下列為甲公司的財務報表資訊，以上的缺失值（？）為：",
+    table:[
+      { label:"銷貨收入",       value:"？",        isQ:true },
+      { label:"銷貨退貨與折讓", value:"$20,000" },
+      { label:"銷貨淨額",       value:"$750,000" },
+      { label:"銷貨成本",       value:"$470,000" },
+      { label:"銷貨毛利",       value:"？",        isQ:true }
+    ],
+    opts:[
+      "銷貨收入 $770,000，銷貨毛利 $330,000",
+      "銷貨收入 $760,000，銷貨毛利 $300,000",
+      "銷貨收入 $770,000，銷貨毛利 $280,000",
+      "銷貨收入 $730,000，銷貨毛利 $280,000"
+    ]
+  },
+  {
+    chapter:"Ch05", no:"選14",
+    q:"以下為丙公司財務報表資訊，丙公司的銷貨毛利為何？",
+    table:[
+      { label:"銷貨收入",       value:"$840,000" },
+      { label:"銷貨退回與折讓", value:"$56,000"  },
+      { label:"銷貨折扣",       value:"$37,000"  },
+      { label:"銷貨成本",       value:"$430,000" }
+    ],
+    opts:["$410,000","$317,000","$354,000","$747,000"]
+  },
+  /* ── Ch06 選1,9 ── */
+  {
+    chapter:"Ch06", no:"選1",
+    q:"小丸子文具店的期初存貨為 $50,000，期末存貨為 $45,000，銷貨成本為 $66,000，試問：其進貨為若干？",
+    opts:["$64,000","$68,000","$61,000","$63,000"]
+  },
+  {
+    chapter:"Ch06", no:"選9",
+    q:"小丸子公司 ×6 年度之進貨 $800,000，進貨退回 $20,000，進貨折讓 $5,000，進貨運費 $30,000，銷貨退回 $20,000，銷貨折讓 $8,000，試問：可供銷售商品成本為何？",
+    opts:["$805,000","$777,000","$815,000","$787,000"]
+  }
+];
+
+const tagClass = { Ch04:"tag-ch04", Ch05:"tag-ch05", Ch06:"tag-ch06" };
+const LABELS = ["A","B","C","D"];
+
+/* ─── Renderers ─── */
+function renderSubItems(items) {
+  return `<ul class="sub-items">${items.map((it,i)=>
+    `<li><span class="num">(${i+1})</span><span>${it}</span></li>`
+  ).join("")}</ul>`;
+}
+function renderTransactions(tx) {
+  return `<table class="transaction-table">
+    <thead><tr><th>日期</th><th>交易內容</th></tr></thead>
+    <tbody>${tx.map(t=>`<tr><td class="date-cell">${t.date}</td><td>${t.content}</td></tr>`).join("")}</tbody>
+  </table>`;
+}
+function renderMCTable(rows) {
+  return `<table class="mc-data-table">
+    <thead><tr><th>項目</th><th>金額</th></tr></thead>
+    <tbody>${rows.map(r=>
+      `<tr><td>${r.label}</td><td class="${r.isQ?'is-q':''}">${r.value}</td></tr>`
+    ).join("")}</tbody>
+  </table>`;
+}
+function renderOptions(opts) {
+  return `<ul class="mc-options">${opts.map((o,i)=>
+    `<li><span class="mc-opt-label">${LABELS[i]}</span><span>${o}</span></li>`
+  ).join("")}</ul>`;
+}
+
+/* ─── Render practice ─── */
+function renderPractice() {
+  document.getElementById("practice-section").innerHTML = PROBLEMS.map(p => {
+    let body = p.bodyType==="list" ? renderSubItems(p.items) : renderTransactions(p.transactions);
+    return `<div class="card" data-chapter="${p.chapter}">
+      <div class="card-header">
+        <span class="chapter-tag ${tagClass[p.chapter]}">${p.chapter}</span>
+        <span class="card-title">題 ${p.no}｜${p.title}</span>
+      </div>
+      <div class="card-subtitle">${p.subtitle}</div>
+      <div class="problem-desc">${p.desc}</div>
+      <div class="problem-body">${body}</div>
+      <div class="ask-label">作答區</div>
+      <textarea class="answer-area" placeholder="在此輸入分錄或解題過程…"></textarea>
+    </div>`;
+  }).join("");
+}
+
+/* ─── Render MC ─── */
+function renderMC() {
+  document.getElementById("mc-section").innerHTML = MC.map(p => {
+    const tableHtml = p.table ? renderMCTable(p.table) : "";
+    return `<div class="card" data-chapter="${p.chapter}">
+      <div class="card-header">
+        <span class="chapter-tag ${tagClass[p.chapter]}">${p.chapter}</span>
+        <span class="card-title">${p.no}</span>
+      </div>
+      <div class="mc-question">${p.q}</div>
+      ${tableHtml}
+      ${renderOptions(p.opts)}
+      <div class="my-answer-row">
+        <span class="my-answer-label">我的答案</span>
+        <input class="my-answer-input" maxlength="1" placeholder="A">
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ─── Tab & filter logic ─── */
+let currentTab = "practice";
+let currentCh  = "all";
+
+function applyFilter() {
+  const id = currentTab === "practice" ? "practice-section" : "mc-section";
+  document.querySelectorAll(`#${id} .card`).forEach(card => {
+    card.classList.toggle("hidden", currentCh !== "all" && card.dataset.chapter !== currentCh);
+  });
+}
+
+document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentTab = btn.dataset.tab;
+  document.getElementById("practice-section").style.display = currentTab === "practice" ? "" : "none";
+  document.getElementById("mc-section").style.display       = currentTab === "mc"       ? "" : "none";
+  applyFilter();
+}));
+
+document.querySelectorAll(".filter-btn").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentCh = btn.dataset.ch;
+  applyFilter();
+}));
+
+renderPractice();
+renderMC();
+</script>
+</body>
+</html>

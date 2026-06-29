@@ -1,5 +1,10 @@
 # Claude Code Global Rules
 
+## 自檢與驗證規則（最高優先，嚴格執行，無例外）
+
+每次對話開始前，必須讀取並遵守 `~/.claude/rules/self-check.md` 的完整內容。
+該檔案是自檢規則的唯一來源，包含：搜尋三層查驗原則、探索模式測試要求、實作前後驗證規範、VM 部署外部驗證要求。
+
 ## Subagent Model Policy
 
 When spawning subagents via the Agent tool, follow this strictly:
@@ -80,6 +85,10 @@ into the main session.
 範例：「我得先把 processVideo 這個函式從頭讀到尾，才能確認函式裡面 frames
 這個變數代表整支影片的所有畫面（allFrames），還是只有卡片區那幾張畫面（cardFrames）。」
 
+對話中禁止使用任何英文縮寫、中文縮寫、自創術語、省略詞語或省略語法，一律使用完整白話文。
+不說「RQ」，說「研究目的」；不說「DSR」，說「設計科學研究法」；不說「CF」，說「修正因子」；不說「LMM」，說「線性混合效應模型」。
+技術量測指標（如 MAPE、MAE、DBH 等）第一次出現時，以白話全稱加括號補充縮寫（例如「平均絕對百分比誤差（MAPE）」），後續同樣使用白話全稱，不單獨使用縮寫形式。
+
 講技術判斷或操作步驟時，用「分層」寫法，兼顧好懂與精簡：
 - 主句只講「結論＋接下來要怎麼辦」，全白話、不夾術語，並把「怎麼辦」提到最前面。
 - 技術細節（欄位名、機制原理、章節編號、雜湊值/ID 等長代號）縮進括號補一句，
@@ -98,11 +107,12 @@ into the main session.
 - 每個說明點不超過 150 字；超過時拆成兩點，不得合併堆疊。
 - 問句必須保留完整動詞結構；禁止截斷式問法。錯誤：「X 能用嗎」。正確：「能使用 X 嗎」「是否能執行 X」。
 - 單字動詞禁止縮略，必須使用完整形式。錯誤：「加子代理」「改設定」「刪舊版」。正確：「加入子代理」「修改設定」「刪除舊版」。
+- **對話語言禁止使用任何縮寫或代號**：包含英文縮寫、中文縮寫、自創流水號、內部代號、省略詞語、省略語法，一律改用完整白話文。程式碼變數名稱（T0、T2、P11、P56 等）、學術縮寫（RQ、DSR、CF、LMM 等）、任何需要解讀才能理解的詞，全部用白話取代。向使用者描述操作對象時，一律使用白話：「論文第四章的三棵樣本展示表格」「4.2 節開頭的段落」「修正因子（乘法係數 ×1.10）」等。
 
 ### 論文改寫句型規則
 
 只要這次對話提到 **thesis-rewrite / 論文改寫 / 論文段落 / 學術寫作** 這類關鍵字，
-就先讀 `C:\Users\yuchi\.claude\docs\thesis-writing-rules.md` 再回答。
+就先讀 `~/.claude/docs/thesis-writing-rules.md` 再回答。
 
 ## 自訂指令
 
@@ -112,7 +122,7 @@ into the main session.
 
 1. 把這次對話裡值得長期保存的查詢/對照資料併入當前專案的 `memory.md`（去重、更新，不刪仍有效的舊資料）。
 2. 重寫當前專案的 `STATE.md`，只留「現況＋進行中＋下一步」，已完成或已搬進 memory.md 的舊資料一律剔除。
-3. 確認當前專案路徑已寫進 `C:\Users\yuchi\.claude\last-active-project.txt`。
+3. 確認當前專案路徑已寫進 `~/.claude/last-active-project.txt`。
 
 執行完畢後，回覆以下兩件事：
 - 實際寫入的三個檔案完整路徑
@@ -122,16 +132,16 @@ into the main session.
 
 當使用者說「請開啟所有未完成的專案」或類似意思，執行：
 ```powershell
-& "C:\Users\yuchi\open-projects.ps1"
+& "~/.claude/tools/open-projects.ps1"
 ```
-此腳本會掃描 `C:\Users\yuchi\openspec\changes\` 下所有專案的 tasks.md，
+此腳本會掃描 `~/.claude/openspec/changes/` 下所有專案的 tasks.md，
 對每個有 `[ ]` 未完成任務的專案，在同一個 Windows Terminal 視窗內以新分頁開啟 claude，
 分頁標題與視窗內文字都會顯示專案名稱，並自動通過授權提示（--dangerously-skip-permissions）。
 
 ## 對話記憶機制
 
 記憶系統與「壓縮前搶救」機制的完整白話說明，見
-`C:\Users\yuchi\.claude\docs\memory-mechanism.md`（需要細節時再讀）。
+`~/.claude/docs/memory-mechanism.md`（需要細節時再讀）。
 
 規則（每次都要遵守）：
 - 不要在記憶檔或對話裡使用「Last Session」這種自創英文標籤。
@@ -143,7 +153,7 @@ into the main session.
 不得直接用讀取工具（Read tool）讀取 PDF：
 
 ```powershell
-python C:\Users\yuchi\.claude\tools\read_pdf.py "<PDF路徑>" [--pages 1-5]
+python ~/.claude/tools/read_pdf.py "<PDF路徑>" [--pages 1-5]
 ```
 
 - `--mode auto`（預設）：自動偵測文字型或掃描型
@@ -156,55 +166,7 @@ python C:\Users\yuchi\.claude\tools\read_pdf.py "<PDF路徑>" [--pages 1-5]
 ## VM 生產檔案修改流程（違反必問使用者）
 
 只要這次對話提到 **staging / SCP 改檔 / 修改 VM 上的檔案 / public/dashboard / push_gh**
-這類關鍵字，就先讀 `C:\Users\yuchi\.claude\docs\vm-file-workflow.md` 再動手。
-
-## 實作前後的測試要求（嚴格執行，無例外）
-
-**探索模式提案前：先做無變動簡易測試**
-- 只要處於探索模式，對任何提出的建議，必須先執行一次不修改任何檔案的簡易測試，確認方案可行，才能向使用者回報
-- 測試方式：讀程式碼確認邏輯、跑 grep 確認 API 存在、執行診斷指令確認環境，不修改任何檔案
-- 測試通過才能說「根本原因是 X，建議修法是 Y」；未測試的方案不得回報
-
-**動手前：先測試假說**
-- 提出假說後，先執行診斷測試確認假說成立，才動手修改程式碼
-- 探索模式下若要提供可行解法，先測試確認方案可執行，才向使用者回報
-- 禁止在假說未經測試的前提下直接修改程式碼
-
-**確認假說後：等待使用者授權，才能動手**
-- 假說測試完成、找到可行修法後，必須先回報「根本原因是 X，建議修法是 Y」
-- 等使用者明確說「好」「可以」「實作」「請實作」等授權語，才能開始寫入任何檔案
-- 禁止在使用者授權前自行啟動實作，即使修法已確定、步驟已清楚
-
-**實作後：執行驗證，禁止目測代替執行**
-
-每次用 Write 或 Edit 寫入程式碼（.py/.js/.ts/.ps1/.go 等）或 PPTX 相關檔案後，
-必須執行測試腳本驗證：
-
-1. **邏輯正確**：執行測試腳本或實際跑程式，印出關鍵數值確認結果
-2. **無殘留代碼**：舊版本片段、被取代的邏輯、遺留 TODO/placeholder 已清除
-3. **版面正確（PPTX）**：執行後截圖或用工具確認版面，不靠目視
-
-多檔任務可等所有檔案寫完後統一跑測試，但不可跳過。
-審查結果不需要在回覆中說明，直接繼續下一步。
-**禁止在實作後測試通過前向使用者說「已完成」。**
-
-## VM 部署自檢要求（違反必問使用者）
-
-每次將服務部署或更新到 VM 後，自檢必須包含從外部 IP 或公開 URL 實際發出請求，確認回傳預期狀態碼。
-**嚴禁只做 `curl localhost` 或內部 IP 驗證**——localhost 確認通過不代表外部可達。
-
-### API 服務加強版：測試矩陣自檢
-
-部署含 REST API 端點的服務後，自檢前必須先列出測試矩陣，再逐一從外部發出請求，全部通過才算完成。
-
-| 端點 | Method | 驗證情境 |
-|------|--------|----------|
-| /forms/ | GET | 正常回傳 200 |
-| /analyze | POST | 正常回傳，含 body |
-| /analyze | OPTIONS | CORS preflight 回應正確 |
-| /protected | GET | 未授權 → 401/403 |
-
-只打單一 GET 端點確認 200 不符合要求，必須覆蓋服務所有對外 method 與情境。
+這類關鍵字，就先讀 `~/.claude/docs/vm-file-workflow.md` 再動手。
 
 ## GitHub Pages 部署位置規則
 
@@ -216,7 +178,7 @@ python C:\Users\yuchi\.claude\tools\read_pdf.py "<PDF路徑>" [--pages 1-5]
 單視窗多專案管理介面，整合畢業專題金字塔框架。啟動指令：
 
 ```powershell
-& "C:\Users\yuchi\.claude\tools\project-kitchen\start.ps1"
+& "~/.claude/tools/project-kitchen/start.ps1"
 ```
 
 啟動後自動開啟 http://localhost:7799，功能：
@@ -231,19 +193,19 @@ python C:\Users\yuchi\.claude\tools\read_pdf.py "<PDF路徑>" [--pages 1-5]
 
 **查看所有專案狀態：**
 ```powershell
-& "C:\Users\yuchi\.claude\tools\project-dashboard.ps1"
+& "~/.claude/tools/project-dashboard.ps1"
 # 只看有待辦的專案：
-& "C:\Users\yuchi\.claude\tools\project-dashboard.ps1" -PendingOnly
+& "~/.claude/tools/project-dashboard.ps1" -PendingOnly
 ```
 
 **啟動子進程（同步，等待完成）：**
 ```powershell
-& "C:\Users\yuchi\.claude\tools\spawn-project.ps1" -ProjectName "<專案名稱>" -Task "<任務描述>"
+& "~/.claude/tools/spawn-project.ps1" -ProjectName "<專案名稱>" -Task "<任務描述>"
 ```
 
 **啟動子進程（非同步，背景執行，不卡主視窗）：**
 ```powershell
-& "C:\Users\yuchi\.claude\tools\spawn-project.ps1" -ProjectName "<專案名稱>" -Task "<任務描述>" -Async
+& "~/.claude/tools/spawn-project.ps1" -ProjectName "<專案名稱>" -Task "<任務描述>" -Async
 ```
 
 選擇時機：
@@ -270,6 +232,26 @@ python C:\Users\yuchi\.claude\tools\read_pdf.py "<PDF路徑>" [--pages 1-5]
 建立新 openspec change 時：先呼叫 Skill(openspec-propose) 標示 `【提案模式】`，完成後直接呼叫 Skill(opsx:apply) 標示 `【實作模式】`，不等使用者確認。
 
 **其他專案同理**：不在主要專案內另外建立子專案，除非使用者明確要求。
+
+**子代理呼叫 explore skill 規則（嚴格執行）**
+凡是為了「分析、探索、META 優化」等目的生成子代理，
+子代理的 prompt 裡**必須明確寫出 `請呼叫 Skill(openspec-explore)`**。
+禁止用 prompt 語氣（例如「請用 explorer 方式分析」「以探索模式觀察」）來代替真正的 skill 呼叫。
+用語氣模仿探索姿態 ≠ 呼叫 skill，兩者不可混用。
+
+違反案例（禁止）：
+```
+Agent(sonnet, prompt="請用 explorer 方式回答 Q1~Q6...")
+```
+正確做法：
+```
+Agent(sonnet, prompt="請呼叫 Skill(openspec-explore)，以下列資料進行探索分析...
+  輸出格式：提出的問題 / 每個問題的選項 / 選擇的選項與理由")
+```
+
+**explore 模式在壓縮後的接續規則**
+對話被壓縮後重新啟動時，explore 模式規則同樣從第一個回應就生效。
+壓縮不等於授權，不可因為「剛壓縮完、在接續任務」就跳過 `Skill(openspec-explore)` 的呼叫。
 
 **工作流程變更歸屬規則**
 任何對 Claude 工作流程的新功能或改進（含 CLAUDE.md、settings.json、hooks、

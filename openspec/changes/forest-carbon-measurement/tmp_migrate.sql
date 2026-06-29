@@ -1,0 +1,40 @@
+-- Migration: add manual tape annotation columns (2026-05-25)
+ALTER TABLE trees ADD COLUMN manual_tape_circ_cm REAL;
+ALTER TABLE trees ADD COLUMN manual_tape_dbh_cm REAL;
+ALTER TABLE trees ADD COLUMN manual_tape_frame_ts_sec REAL;
+ALTER TABLE trees ADD COLUMN manual_tape_annotated_at INTEGER;
+ALTER TABLE trees ADD COLUMN manual_tape_annotator TEXT;
+
+-- Batch import 31 manual readings (circumference cm, timestamp seconds)
+-- 同步寫入 derived DBH = circ / PI
+UPDATE trees SET manual_tape_circ_cm=71,    manual_tape_dbh_cm=ROUND(71/3.14159265358979,1),    manual_tape_frame_ts_sec=17,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5786.mov';
+UPDATE trees SET manual_tape_circ_cm=85.5,  manual_tape_dbh_cm=ROUND(85.5/3.14159265358979,1),  manual_tape_frame_ts_sec=4,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5787.mov';
+UPDATE trees SET manual_tape_circ_cm=87,    manual_tape_dbh_cm=ROUND(87/3.14159265358979,1),    manual_tape_frame_ts_sec=5,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5788.mov';
+UPDATE trees SET manual_tape_circ_cm=82.5,  manual_tape_dbh_cm=ROUND(82.5/3.14159265358979,1),  manual_tape_frame_ts_sec=4,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5789.mov';
+UPDATE trees SET manual_tape_circ_cm=61,    manual_tape_dbh_cm=ROUND(61/3.14159265358979,1),    manual_tape_frame_ts_sec=3,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5790.mov';
+UPDATE trees SET manual_tape_circ_cm=95,    manual_tape_dbh_cm=ROUND(95/3.14159265358979,1),    manual_tape_frame_ts_sec=7,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5791.mov';
+UPDATE trees SET manual_tape_circ_cm=90,    manual_tape_dbh_cm=ROUND(90/3.14159265358979,1),    manual_tape_frame_ts_sec=6,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5792.mov';
+UPDATE trees SET manual_tape_circ_cm=106,   manual_tape_dbh_cm=ROUND(106/3.14159265358979,1),   manual_tape_frame_ts_sec=5,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5793.mov';
+UPDATE trees SET manual_tape_circ_cm=98,    manual_tape_dbh_cm=ROUND(98/3.14159265358979,1),    manual_tape_frame_ts_sec=7,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5794.mov';
+UPDATE trees SET manual_tape_circ_cm=69,    manual_tape_dbh_cm=ROUND(69/3.14159265358979,1),    manual_tape_frame_ts_sec=9,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5795.mov';
+UPDATE trees SET manual_tape_circ_cm=132,   manual_tape_dbh_cm=ROUND(132/3.14159265358979,1),   manual_tape_frame_ts_sec=78,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5798.mov';
+UPDATE trees SET manual_tape_circ_cm=137,   manual_tape_dbh_cm=ROUND(137/3.14159265358979,1),   manual_tape_frame_ts_sec=66,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5799.mov';
+UPDATE trees SET manual_tape_circ_cm=55,    manual_tape_dbh_cm=ROUND(55/3.14159265358979,1),    manual_tape_frame_ts_sec=85,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5800.mov';
+UPDATE trees SET manual_tape_circ_cm=53,    manual_tape_dbh_cm=ROUND(53/3.14159265358979,1),    manual_tape_frame_ts_sec=54,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5801.mov';
+UPDATE trees SET manual_tape_circ_cm=138,   manual_tape_dbh_cm=ROUND(138/3.14159265358979,1),   manual_tape_frame_ts_sec=116, manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5802.mov';
+UPDATE trees SET manual_tape_circ_cm=135,   manual_tape_dbh_cm=ROUND(135/3.14159265358979,1),   manual_tape_frame_ts_sec=5,   manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5803.mov';
+UPDATE trees SET manual_tape_circ_cm=80,    manual_tape_dbh_cm=ROUND(80/3.14159265358979,1),    manual_tape_frame_ts_sec=178, manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5804.mov';
+UPDATE trees SET manual_tape_circ_cm=112,   manual_tape_dbh_cm=ROUND(112/3.14159265358979,1),   manual_tape_frame_ts_sec=126, manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5805.mov';
+UPDATE trees SET manual_tape_circ_cm=122,   manual_tape_dbh_cm=ROUND(122/3.14159265358979,1),   manual_tape_frame_ts_sec=134, manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5806.mov';
+UPDATE trees SET manual_tape_circ_cm=99,    manual_tape_dbh_cm=ROUND(99/3.14159265358979,1),    manual_tape_frame_ts_sec=108, manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5807.mov';
+UPDATE trees SET manual_tape_circ_cm=100,   manual_tape_dbh_cm=ROUND(100/3.14159265358979,1),   manual_tape_frame_ts_sec=113, manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5808.mov';
+UPDATE trees SET manual_tape_circ_cm=96,    manual_tape_dbh_cm=ROUND(96/3.14159265358979,1),    manual_tape_frame_ts_sec=71,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5809.mov';
+UPDATE trees SET manual_tape_circ_cm=94,    manual_tape_dbh_cm=ROUND(94/3.14159265358979,1),    manual_tape_frame_ts_sec=92,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5810.mov';
+UPDATE trees SET manual_tape_circ_cm=96,    manual_tape_dbh_cm=ROUND(96/3.14159265358979,1),    manual_tape_frame_ts_sec=70,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5811.mov';
+UPDATE trees SET manual_tape_circ_cm=97,    manual_tape_dbh_cm=ROUND(97/3.14159265358979,1),    manual_tape_frame_ts_sec=78,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5812.mov';
+UPDATE trees SET manual_tape_circ_cm=82,    manual_tape_dbh_cm=ROUND(82/3.14159265358979,1),    manual_tape_frame_ts_sec=68,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5813.mov';
+UPDATE trees SET manual_tape_circ_cm=121,   manual_tape_dbh_cm=ROUND(121/3.14159265358979,1),   manual_tape_frame_ts_sec=100, manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5814.mov';
+UPDATE trees SET manual_tape_circ_cm=102,   manual_tape_dbh_cm=ROUND(102/3.14159265358979,1),   manual_tape_frame_ts_sec=97,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5815.mov';
+UPDATE trees SET manual_tape_circ_cm=77,    manual_tape_dbh_cm=ROUND(77/3.14159265358979,1),    manual_tape_frame_ts_sec=12,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5817.mov';
+UPDATE trees SET manual_tape_circ_cm=55,    manual_tape_dbh_cm=ROUND(55/3.14159265358979,1),    manual_tape_frame_ts_sec=10,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5818.mov';
+UPDATE trees SET manual_tape_circ_cm=68,    manual_tape_dbh_cm=ROUND(68/3.14159265358979,1),    manual_tape_frame_ts_sec=16,  manual_tape_annotated_at=strftime('%s','now'), manual_tape_annotator='yuchi' WHERE video_original_name='IMG_5819.mov';

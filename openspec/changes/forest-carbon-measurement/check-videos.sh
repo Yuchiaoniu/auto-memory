@@ -1,0 +1,16 @@
+#!/bin/bash
+cd ~/forest-carbon-measurement
+echo "--- trees with video_original_name ---"
+sqlite3 data.db "SELECT video_original_name FROM trees ORDER BY created_at;"
+echo ""
+echo "--- trees missing env_context ---"
+sqlite3 data.db "SELECT t.id, t.video_original_name FROM trees t LEFT JOIN environmental_context e ON e.tree_id=t.id WHERE e.tree_id IS NULL;"
+echo ""
+echo "--- stories per tree (dup check) ---"
+sqlite3 data.db "SELECT tree_id, COUNT(*) AS n FROM stories GROUP BY tree_id ORDER BY n DESC LIMIT 10;"
+echo ""
+echo "--- blockchain jobs by tx_status ---"
+sqlite3 data.db "SELECT tx_status, COUNT(*) FROM blockchain_jobs GROUP BY tx_status;"
+echo ""
+echo "--- trees by tx_status ---"
+sqlite3 data.db "SELECT tx_status, COUNT(*) FROM trees GROUP BY tx_status;"

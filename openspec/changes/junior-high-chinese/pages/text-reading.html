@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>課文閱讀 - 國中國文學習平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .text-list { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+    .text-item {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+    }
+    .text-item:hover { border-color: var(--primary-light); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .text-item-info { flex: 1; }
+    .text-item-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+    .text-item-meta { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .text-item-arrow { color: var(--text-muted); font-size: 1.2rem; flex-shrink: 0; }
+    .filter-bar { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; background: white; border-bottom: 1px solid var(--border); }
+    .count-label { font-size: 0.85rem; color: var(--text-muted); margin-left: auto; }
+    #no-results { display: none; }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="../index.html" class="nav-back">← 首頁</a>
+  <span class="nav-logo">課文閱讀</span>
+</nav>
+
+<div class="page-hero">
+  <h1>📖 課文閱讀</h1>
+  <p>按年級瀏覽課文，點擊展開段落導讀與生字詞說明</p>
+</div>
+
+<!-- Grade Filter -->
+<div class="grade-tabs" id="grade-tabs">
+  <button class="grade-tab active" data-grade="all">全部</button>
+  <button class="grade-tab" data-grade="7">七年級</button>
+  <button class="grade-tab" data-grade="8">八年級</button>
+  <button class="grade-tab" data-grade="9">九年級</button>
+</div>
+
+<div class="filter-bar">
+  <span id="count-label" class="count-label">載入中…</span>
+</div>
+
+<div class="text-list" id="text-list">
+  <div class="loading">載入課文中…</div>
+</div>
+
+<div id="no-results" class="empty-state" style="display:none;">
+  <div class="empty-state-icon">📭</div>
+  <p>此年級目前沒有課文</p>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+let allTexts = [];
+let currentGrade = null;
+
+function renderList(texts) {
+  const list = document.getElementById('text-list');
+  const noResults = document.getElementById('no-results');
+  const countLabel = document.getElementById('count-label');
+
+  if (!texts.length) {
+    list.innerHTML = '';
+    noResults.style.display = 'block';
+    countLabel.textContent = '共 0 篇';
+    return;
+  }
+  noResults.style.display = 'none';
+  countLabel.textContent = `共 ${texts.length} 篇`;
+
+  list.innerHTML = texts.map(t => {
+    const gradeColors = { 7: 'blue', 8: 'green', 9: 'purple' };
+    const genreCol = genreColor(t.genre);
+    return `
+      <a href="text-detail.html?id=${t.id}" class="text-item">
+        <div class="text-item-info">
+          <div class="text-item-title">${t.title}</div>
+          <div class="text-item-meta">
+            <span class="badge badge-${gradeColors[t.grade] || 'gray'}">${gradeLabel(t.grade)}</span>
+            <span class="badge badge-${genreCol}">${t.genre}</span>
+            <span>作者：${t.author}</span>
+            <span>生字詞：${t.vocabulary.length} 個</span>
+          </div>
+        </div>
+        <span class="text-item-arrow">›</span>
+      </a>
+    `;
+  }).join('');
+}
+
+async function init() {
+  try {
+    allTexts = await loadData('texts.json');
+    renderList(allTexts);
+  } catch(e) {
+    showError(document.getElementById('text-list'));
+  }
+
+  initGradeTabs(document.getElementById('grade-tabs'), (grade) => {
+    currentGrade = grade;
+    const filtered = grade ? allTexts.filter(t => t.grade === grade) : allTexts;
+    renderList(filtered);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

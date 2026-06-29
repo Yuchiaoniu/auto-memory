@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國中國文學習平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #2563eb 100%);
+      color: white;
+      padding: 3rem 1.5rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-title { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.75rem; position: relative; }
+    .hero-subtitle { font-size: 1.05rem; opacity: 0.9; position: relative; }
+    .hero-badges { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1.25rem; position: relative; flex-wrap: wrap; }
+    .hero-badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 999px;
+      padding: 0.25rem 0.85rem;
+      font-size: 0.85rem;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.25rem;
+      padding: 2rem 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .module-card {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid #e2e8f0;
+    }
+    .module-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+
+    .module-card-header {
+      padding: 1.5rem 1.5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .module-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+    .module-card-title { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 0.2rem; }
+    .module-card-sub { font-size: 0.85rem; color: #64748b; }
+
+    .module-card-body {
+      padding: 0 1.5rem 1.25rem;
+      font-size: 0.88rem;
+      color: #475569;
+      line-height: 1.7;
+    }
+
+    .module-card-footer {
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+    }
+    .module-card-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .module-arrow { color: #94a3b8; font-size: 1.1rem; }
+
+    .section-header {
+      padding: 1.5rem 1.5rem 0;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .section-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+    }
+    .section-header p { font-size: 0.9rem; color: #64748b; margin: 0.25rem 0 0; }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      border-top: 1px solid #e2e8f0;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .hero-title { font-size: 1.6rem; }
+      .module-grid { grid-template-columns: 1fr; padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-title">📚 國中國文學習平台</div>
+  <div class="hero-subtitle">七至九年級 · 五大核心模組 · 零伺服器靜態網站</div>
+  <div class="hero-badges">
+    <span class="hero-badge">七年級</span>
+    <span class="hero-badge">八年級</span>
+    <span class="hero-badge">九年級</span>
+    <span class="hero-badge">行動裝置友善</span>
+  </div>
+</div>
+
+<!-- Module Cards -->
+<div class="section-header">
+  <h2>學習模組</h2>
+  <p>選擇你想要練習的主題，開始今天的學習</p>
+</div>
+
+<div class="module-grid">
+
+  <a href="pages/text-reading.html" class="module-card">
+    <div class="module-card-header">
+      <div class="module-icon" style="background:#dbeafe;">📖</div>
+      <div>
+        <div class="module-card-title">課文閱讀</div>
+        <div class="module-card-sub">段落導讀 · 生字詞解釋</div>
+      </div>
+    </div>
+    <div class="module-card-body">
+      按年級瀏覽示範課文，點擊段落展開導讀說明，生字底線點擊查看注音與解釋。
+    </div>
+    <div class="module-card-footer">
+      <div class="module-card-tags">
+        <span class="badge badge-blue">七年級</span>
+        <span class="badge badge-green">八年級</span>
+        <span class="badge badge-purple">九年級</span>
+      </div>
+      <span class="module-arrow">›</span>
+    </div>
+  </a>
+
+  <a href="pages/literary-knowledge.html" class="module-card">
+    <div class="module-card-header">
+      <div class="module-icon" style="background:#fef3c7;">🏛️</div>
+      <div>
+        <div class="module-card-title">文學常識</div>
+        <div class="module-card-sub">作者介紹 · 文體說明 · 朝代時間軸</div>
+      </div>
+    </div>
+    <div class="module-card-body">
+      認識重要作家與其代表作，了解各種文體特色，透過朝代時間軸掌握文學史脈絡。
+    </div>
+    <div class="module-card-footer">
+      <div class="module-card-tags">
+        <span class="badge badge-gold">作者卡片</span>
+        <span class="badge badge-gray">朝代時間軸</span>
+      </div>
+      <span class="module-arrow">›</span>
+    </div>
+  </a>
+
+  <a href="pages/rhetoric-techniques.html" class="module-card">
+    <div class="module-card-header">
+      <div class="module-icon" style="background:#ede9fe;">✍️</div>
+      <div>
+        <div class="module-card-title">修辭技巧</div>
+        <div class="module-card-sub">10 種修辭法 · 練習測驗</div>
+      </div>
+    </div>
+    <div class="module-card-body">
+      學習比喻、擬人、誇飾等 10 種修辭法的定義與例句，再透過測驗鞏固辨識能力。
+    </div>
+    <div class="module-card-footer">
+      <div class="module-card-tags">
+        <span class="badge badge-purple">10 種修辭</span>
+        <span class="badge badge-red">30 題測驗</span>
+      </div>
+      <span class="module-arrow">›</span>
+    </div>
+  </a>
+
+  <a href="pages/classical-translation.html" class="module-card">
+    <div class="module-card-header">
+      <div class="module-icon" style="background:#dcfce7;">📜</div>
+      <div>
+        <div class="module-card-title">古文今譯</div>
+        <div class="module-card-sub">原文今譯 · 逐句解析 · 字詞測驗</div>
+      </div>
+    </div>
+    <div class="module-card-body">
+      閱讀公版古文的原文與今譯對照，點擊句子展開詳細解析，練習重點字詞測驗。
+    </div>
+    <div class="module-card-footer">
+      <div class="module-card-tags">
+        <span class="badge badge-green">並排對照</span>
+        <span class="badge badge-blue">字詞測驗</span>
+      </div>
+      <span class="module-arrow">›</span>
+    </div>
+  </a>
+
+  <a href="pages/writing-practice.html" class="module-card">
+    <div class="module-card-header">
+      <div class="module-icon" style="background:#fee2e2;">🖊️</div>
+      <div>
+        <div class="module-card-title">寫作練習</div>
+        <div class="module-card-sub">題目庫 · 寫作技巧 · 範文賞析</div>
+      </div>
+    </div>
+    <div class="module-card-body">
+      瀏覽作文題目庫與審題要點，學習各文體開頭結尾技巧，閱讀亮點標示範文。
+    </div>
+    <div class="module-card-footer">
+      <div class="module-card-tags">
+        <span class="badge badge-red">記敘文</span>
+        <span class="badge badge-green">說明文</span>
+        <span class="badge badge-blue">議論文</span>
+      </div>
+      <span class="module-arrow">›</span>
+    </div>
+  </a>
+
+</div>
+
+<footer>
+  國中國文學習平台 · 靜態示範網站 · 僅供教學參考，課文內容均為自編示範或公版古文
+</footer>
+
+</body>
+</html>

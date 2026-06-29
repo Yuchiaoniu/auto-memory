@@ -1,0 +1,78 @@
+# interactive-charts Specification
+
+## Purpose
+TBD - created by archiving change build-mvp-rv-continuous. Update Purpose after archive.
+## Requirements
+### Requirement: 互動圖表通用元件
+
+系統 SHALL 提供統一的互動圖表元件，包含三個區塊：參數滑桿、PDF/CDF 雙圖、即時統計量顯示。所有連續分配頁面共用此元件。
+
+#### Scenario: 統一介面
+
+- **WHEN** 使用者在均勻、常態、指數三個分配頁之間切換
+- **THEN** 系統呈現相同版型：上方參數滑桿、中間 PDF + CDF 雙圖（左 PDF 右 CDF）、下方 E(X)、Var(X)、自訂區間機率查詢
+
+### Requirement: 常態分配參數滑桿
+
+系統 SHALL 提供 μ（-10 到 10，步長 0.1）與 σ（0.1 到 5，步長 0.1）兩個滑桿，拖動時即時更新 PDF 與 CDF 圖形。
+
+#### Scenario: 拖 μ 看分配平移
+
+- **WHEN** 使用者把 μ 從 0 拖到 3
+- **THEN** PDF 曲線整體向右平移 3 單位，CDF 階躍中點同步平移
+
+#### Scenario: 拖 σ 看分配胖瘦
+
+- **WHEN** 使用者把 σ 從 1 拖到 2
+- **THEN** PDF 曲線變矮變胖（最高點降低、兩側展開），CDF 斜率變平緩
+
+### Requirement: 均勻分配參數滑桿
+
+系統 SHALL 提供 a 與 b 兩個滑桿（範圍 -10 到 10，需保證 a < b），即時更新方形 PDF 與線性 CDF。
+
+#### Scenario: 區間機率即時計算
+
+- **WHEN** 使用者設定 a=0, b=10 並在區間查詢框輸入「3 ≤ X ≤ 7」
+- **THEN** 系統顯示 P = 0.4，並在 PDF 圖上以陰影標示 [3, 7] 區域
+
+### Requirement: 指數分配參數滑桿
+
+系統 SHALL 提供 λ 滑桿（0.01 到 5，步長 0.01），即時更新 PDF 與 CDF。
+
+#### Scenario: 觀察 λ 影響
+
+- **WHEN** 使用者把 λ 從 0.5 拖到 2
+- **THEN** PDF 起點變高（λ）、衰減更快；CDF 上升更陡
+
+### Requirement: 離散到連續動畫過渡
+
+系統 SHALL 提供一個專屬展示頁，使用者按「切得更細」按鈕時，直方圖柱數翻倍，最終逼近平滑 PDF 曲線。
+
+#### Scenario: 點擊觀察過渡
+
+- **WHEN** 使用者連續按「切得更細」5 次
+- **THEN** 柱數從 4 → 8 → 16 → 32 → 64 → 128，當柱寬 < 0.1 時自動切換為平滑曲線並顯示「這就是積分」字樣
+
+### Requirement: 機率藏在面積裡互動視覺化
+
+系統 SHALL 在 `js/area-viz.js` 提供獨立的 Canvas 元件：渲染標準常態 PDF 曲線、根據 a 與 b 輸入即時繪製陰影、即時顯示對應的 P(a ≤ X ≤ b) 數值。
+
+#### Scenario: 拖 a 或 b 值
+
+- **WHEN** 使用者在輸入框輸入 a = −1、b = 1
+- **THEN** Canvas 陰影更新為 [−1, 1] 區間，旁邊顯示「P(a ≤ X ≤ b) = 0.6827」
+
+#### Scenario: 與其他 chart-panel 元件相容
+
+- **WHEN** 使用者同時在隨機變數頁與連續型分配頁開啟（不同分頁）
+- **THEN** area-viz 與 chart-panel 各自獨立渲染，互不干擾
+
+### Requirement: 自適應寬度
+
+系統 SHALL 讓 area-viz Canvas 自動填滿其容器寬度，且在視窗縮放時重新繪製。
+
+#### Scenario: 視窗縮放
+
+- **WHEN** 使用者縮小瀏覽器寬度
+- **THEN** Canvas 寬度同步縮小，PDF 曲線與標籤位置正確
+

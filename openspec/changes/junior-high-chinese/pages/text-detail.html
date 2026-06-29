@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>課文閱讀 - 國中國文學習平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .content-area { max-width: 780px; margin: 0 auto; padding: 1.5rem; }
+    .text-header {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .text-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .text-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .vocab-legend {
+      margin-bottom: 1.25rem;
+      padding: 0.6rem 1rem;
+      background: #eff6ff;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      color: #1e40af;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-label {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--primary-light);
+    }
+    .vocab-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .vocab-chip {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .vocab-chip:hover { border-color: var(--primary-light); background: #eff6ff; }
+    .vocab-chip-word { font-size: 1rem; font-weight: 700; color: var(--primary); }
+    .vocab-chip-phonetic { font-size: 0.8rem; color: var(--text-muted); }
+    .all-paras-toggle {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 0.75rem;
+    }
+    .author-link {
+      color: var(--primary);
+      cursor: pointer;
+      border-bottom: 1px dashed var(--primary-light);
+    }
+    .author-link:hover { color: var(--primary-dark); }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="text-reading.html" class="nav-back">← 課文列表</a>
+  <span class="nav-logo" id="nav-title">課文閱讀</span>
+</nav>
+
+<div id="loading" class="loading" style="margin-top:3rem;">載入課文中…</div>
+<div id="main-content" style="display:none;">
+  <div class="content-area">
+
+    <!-- Text Header -->
+    <div class="text-header">
+      <div class="text-title" id="text-title"></div>
+      <div class="text-meta" id="text-meta"></div>
+    </div>
+
+    <!-- Vocab Legend -->
+    <div class="vocab-legend">
+      💡 帶底線的詞語為生字詞，點擊可查看注音與解釋
+    </div>
+
+    <!-- Paragraphs -->
+    <div class="section-label">課文段落</div>
+    <div class="all-paras-toggle">
+      <button class="btn btn-outline" id="toggle-all-btn" style="font-size:0.85rem;padding:0.4rem 1rem;">展開所有導讀</button>
+    </div>
+    <div id="paragraphs-container"></div>
+
+    <hr class="divider">
+
+    <!-- Vocabulary List -->
+    <div class="section-label">生字詞總覽</div>
+    <div class="vocab-list" id="vocab-list"></div>
+
+  </div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+let text = null;
+let allGuidesOpen = false;
+
+async function init() {
+  const id = getParam('id');
+  if (!id) { window.location.href = 'text-reading.html'; return; }
+
+  try {
+    const texts = await loadData('texts.json');
+    text = texts.find(t => t.id === id);
+    if (!text) { window.location.href = 'text-reading.html'; return; }
+    render();
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>載入失敗</p></div>';
+  }
+}
+
+function render() {
+  document.title = `${text.title} - 國中國文學習平台`;
+  document.getElementById('nav-title').textContent = text.title;
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+
+  // Header
+  document.getElementById('text-title').textContent = text.title;
+  const gradeColors = { 7: 'blue', 8: 'green', 9: 'purple' };
+  let authorHtml = text.author_id
+    ? `<a class="author-link" href="literary-knowledge.html?author=${text.author_id}">${text.author}</a>`
+    : text.author;
+  document.getElementById('text-meta').innerHTML = `
+    <span class="badge badge-${gradeColors[text.grade] || 'gray'}">${gradeLabel(text.grade)}</span>
+    <span class="badge badge-${genreColor(text.genre)}">${text.genre}</span>
+    <span style="font-size:0.9rem;color:#64748b;">作者：${authorHtml}</span>
+    <span style="font-size:0.9rem;color:#64748b;">出處：${text.source}</span>
+  `;
+
+  // Paragraphs
+  const container = document.getElementById('paragraphs-container');
+  container.innerHTML = text.paragraphs.map((p, i) => {
+    const vocabInPara = text.vocabulary.filter(v => v.paragraph_index === i);
+    const paraId = `para-${i}`;
+    const guideId = `guide-${i}`;
+    return `
+      <div class="para-card">
+        <div class="para-text" id="${paraId}">${escapeHtml(p.text)}</div>
+        <button class="para-guide-toggle" onclick="toggleGuide('${guideId}', this)">
+          <span>📋</span> 段落導讀
+          <span style="margin-left:auto;font-size:0.75rem;opacity:0.7" class="guide-icon">▼</span>
+        </button>
+        <div class="para-guide" id="${guideId}">${p.guide}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Apply vocab highlights
+  text.paragraphs.forEach((p, i) => {
+    const paraEl = document.getElementById(`para-${i}`);
+    if (paraEl) applyVocabHighlight(paraEl, text.vocabulary, i);
+  });
+
+  // Toggle all button
+  document.getElementById('toggle-all-btn').addEventListener('click', () => {
+    allGuidesOpen = !allGuidesOpen;
+    text.paragraphs.forEach((p, i) => {
+      const guide = document.getElementById(`guide-${i}`);
+      const btn = guide?.previousElementSibling;
+      if (guide) guide.classList.toggle('open', allGuidesOpen);
+      if (btn) btn.classList.toggle('open', allGuidesOpen);
+    });
+    document.getElementById('toggle-all-btn').textContent = allGuidesOpen ? '收合所有導讀' : '展開所有導讀';
+  });
+
+  // Vocab list
+  document.getElementById('vocab-list').innerHTML = text.vocabulary.map(v => `
+    <div class="vocab-chip" onclick="openPopup({word:'${v.word}',phonetic:'${v.phonetic}',meaning:'${v.meaning}'})">
+      <div class="vocab-chip-word">${v.word}</div>
+      <div class="vocab-chip-phonetic">${v.phonetic}</div>
+    </div>
+  `).join('');
+}
+
+function toggleGuide(id, btn) {
+  const guide = document.getElementById(id);
+  const isOpen = guide.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+init();
+</script>
+</body>
+</html>

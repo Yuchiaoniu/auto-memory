@@ -1,0 +1,5 @@
+require('dotenv').config()
+const { pushTreesJson } = require('./src/services/githubSyncService')
+pushTreesJson()
+  .then(() => { console.log('push ok'); process.exit(0) })
+  .catch(e => { console.error('push failed:', e.message); process.exit(1) })

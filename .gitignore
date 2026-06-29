@@ -4,6 +4,7 @@ last-active-project.txt
 daemon.log
 daemon-auth-cooldown
 daemon-auth-status.json
+daemon/
 session-env/
 sessions/
 cache/
@@ -15,6 +16,10 @@ file-history/
 backups/
 downloads/
 pdf_extract.txt
+plugins/
+.last-cleanup
+.last-update-result.json
+scheduled_tasks.lock
 
 # Memory & project data (contains IPs, private keys, personal data)
 projects/
@@ -23,6 +28,9 @@ projects/
 .credentials.json
 *.credentials.json
 .memsync-*.txt
+.telegram-config
+service-account.json
+dotenv.txt
 
 # Local overrides (may contain secrets)
 settings.local.json
@@ -39,5 +47,8 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Node.js
+node_modules/
+
 # Log files
-tools/project-kitchen/server.log
+*.log

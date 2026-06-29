@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>古文今譯 - 國中國文學習平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .content-area { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+
+    /* List view */
+    .classical-item {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .classical-item:hover { border-color: var(--primary-light); box-shadow: var(--shadow-md); }
+    .classical-item-title { font-size: 1.1rem; font-weight: 700; }
+    .classical-item-meta { font-size: 0.85rem; color: #64748b; margin-top: 0.3rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+    /* Reading view */
+    .reading-view { display: none; }
+    .reading-header {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .reading-title { font-size: 1.4rem; font-weight: 700; }
+    .view-toggle {
+      display: flex;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+    .view-btn {
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .view-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* Sentence rows */
+    .sentence-row {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.85rem;
+      overflow: hidden;
+      background: white;
+    }
+    .sentence-side-by-side {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .sentence-side-by-side .sentence-classical {
+      padding: 0.85rem 1.1rem;
+      font-size: 1.05rem;
+      line-height: 2.2;
+      border-right: 1px solid var(--border);
+    }
+    .sentence-side-by-side .sentence-modern {
+      padding: 0.85rem 1.1rem;
+      font-size: 0.92rem;
+      line-height: 2;
+      color: #374151;
+    }
+    .sentence-single {
+      padding: 0.85rem 1.1rem;
+    }
+    .sentence-single .sentence-classical { font-size: 1.05rem; line-height: 2.2; font-weight: 500; }
+    .sentence-single .sentence-modern {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--border);
+      font-size: 0.9rem;
+      color: #374151;
+      line-height: 1.9;
+    }
+    .sentence-toggle-btn {
+      width: 100%;
+      text-align: left;
+      border: none;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
+      padding: 0.5rem 1rem;
+      font-size: 0.83rem;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .sentence-toggle-btn:hover { background: #eff6ff; }
+    .sentence-analysis {
+      border-top: 1px solid var(--border);
+      background: #f0f9ff;
+      padding: 0.85rem 1rem;
+      display: none;
+    }
+    .sentence-analysis.open { display: block; }
+    .analysis-text { font-size: 0.88rem; line-height: 1.9; color: #1e3a8a; margin-bottom: 0.75rem; }
+    .key-words-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .key-word-item {
+      background: white;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      cursor: pointer;
+    }
+    .key-word-item:hover { background: #eff6ff; }
+    .key-word-char { font-weight: 700; color: var(--primary); font-size: 1rem; min-width: 1.5rem; }
+    .key-word-info { flex: 1; }
+    .key-word-meaning { color: #374151; }
+    .key-word-type { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    /* Quiz mode */
+    .quiz-mode-banner {
+      background: linear-gradient(90deg, #7c3aed, #a855f7);
+      color: white;
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.25rem;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .fill-blank { display: inline-block; min-width: 4rem; border-bottom: 2px solid #7c3aed; text-align: center; cursor: pointer; color: #7c3aed; font-weight: 700; }
+    .fill-blank.revealed { color: var(--text); border-bottom-color: var(--success); }
+
+    @media (max-width: 560px) {
+      .sentence-side-by-side { grid-template-columns: 1fr; }
+      .sentence-side-by-side .sentence-classical { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="../index.html" class="nav-back" id="nav-back">← 首頁</a>
+  <span class="nav-logo">古文今譯</span>
+</nav>
+
+<div class="page-hero">
+  <h1>📜 古文今譯</h1>
+  <p>原文對照 · 逐句解析 · 重點字詞</p>
+</div>
+
+<!-- Grade filter -->
+<div class="grade-tabs" id="grade-tabs">
+  <button class="grade-tab active" data-grade="all">全部</button>
+  <button class="grade-tab" data-grade="7">七年級</button>
+  <button class="grade-tab" data-grade="8">八年級</button>
+  <button class="grade-tab" data-grade="9">九年級</button>
+</div>
+
+<div class="content-area">
+
+  <!-- List view -->
+  <div id="list-view">
+    <div id="classical-list"><div class="loading">載入中…</div></div>
+  </div>
+
+  <!-- Reading view -->
+  <div id="reading-view" class="reading-view">
+    <div class="reading-header">
+      <div>
+        <div class="reading-title" id="reading-title"></div>
+        <div id="reading-meta" style="font-size:0.85rem;color:#64748b;margin-top:0.3rem;display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+      </div>
+      <div>
+        <div class="view-toggle" id="view-toggle">
+          <button class="view-btn active" data-view="side">並排對照</button>
+          <button class="view-btn" data-view="single">單欄顯示</button>
+          <button class="view-btn" data-view="quiz">字詞測驗</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sentences-container"></div>
+
+    <button class="btn btn-outline" style="margin-top:0.5rem;" onclick="backToList()">← 返回列表</button>
+  </div>
+
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+let classicalData = [];
+let filteredData = [];
+let currentText = null;
+let currentView = 'side';
+
+function renderList(data) {
+  const listEl = document.getElementById('classical-list');
+  if (!data.length) {
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>此年級暫無古文資料</p></div>';
+    return;
+  }
+  const eraColors = { '春秋': 'red', '三國': 'green', '東晉': 'gold', '北宋': 'blue', '南宋': 'purple' };
+  listEl.innerHTML = data.map(t => `
+    <div class="classical-item" onclick="openText('${t.id}')">
+      <div class="classical-item-title">${t.title}</div>
+      <div class="classical-item-meta">
+        <span class="badge badge-${['7','8','9'].includes(String(t.grade)) ? ['blue','green','purple'][t.grade-7] : 'gray'}">${gradeLabel(t.grade)}</span>
+        <span class="badge badge-${eraColors[t.era] || 'gray'}">${t.era}</span>
+        <span>作者：${t.author}</span>
+        <span>共 ${t.sentences.length} 句</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openText(id) {
+  currentText = classicalData.find(t => t.id === id);
+  if (!currentText) return;
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('reading-view').style.display = 'block';
+  document.getElementById('nav-back').textContent = '← 古文列表';
+  document.getElementById('nav-back').onclick = backToList;
+  document.getElementById('reading-title').textContent = currentText.title;
+  document.getElementById('reading-meta').innerHTML = `
+    <span>作者：${currentText.author}</span>
+    <span>朝代：${currentText.era}</span>
+  `;
+  currentView = 'side';
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'side'));
+  renderSentences();
+  window.scrollTo(0, 0);
+}
+
+function backToList() {
+  document.getElementById('list-view').style.display = 'block';
+  document.getElementById('reading-view').style.display = 'none';
+  document.getElementById('nav-back').textContent = '← 首頁';
+  document.getElementById('nav-back').href = '../index.html';
+  document.getElementById('nav-back').onclick = null;
+}
+
+function renderSentences() {
+  const container = document.getElementById('sentences-container');
+  container.innerHTML = currentText.sentences.map((s, i) => {
+    const isQuiz = currentView === 'quiz';
+    let classicalHtml = s.classical;
+    let modernHtml = s.modern;
+
+    if (isQuiz) {
+      s.key_words.forEach(kw => {
+        const escaped = kw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        classicalHtml = classicalHtml.replace(new RegExp(escaped, 'g'),
+          `<span class="fill-blank" onclick="revealWord(this, '${kw.word}')" title="點擊顯示">[　]</span>`
+        );
+      });
+    } else {
+      s.key_words.forEach(kw => {
+        const escaped = kw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        classicalHtml = classicalHtml.replace(new RegExp(escaped, 'g'),
+          `<span class="vocab-word" data-word="${kw.word}" data-phonetic="${kw.type}" data-meaning="${kw.meaning}">${kw.word}</span>`
+        );
+      });
+    }
+
+    let contentHtml = '';
+    if (currentView === 'side') {
+      contentHtml = `
+        <div class="sentence-side-by-side">
+          <div class="sentence-classical">${classicalHtml}</div>
+          <div class="sentence-modern">${modernHtml}</div>
+        </div>
+      `;
+    } else if (currentView === 'single') {
+      contentHtml = `
+        <div class="sentence-single">
+          <div class="sentence-classical">${classicalHtml}</div>
+          <div class="sentence-modern">${modernHtml}</div>
+        </div>
+      `;
+    } else {
+      contentHtml = `
+        <div class="sentence-single">
+          <div class="sentence-classical">${classicalHtml}</div>
+          <div class="sentence-modern" style="font-style:italic;color:#94a3b8;font-size:0.82rem;">（今譯：點擊原文填空後可查看）</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="sentence-row">
+        ${contentHtml}
+        <button class="sentence-toggle-btn" onclick="toggleAnalysis('analysis-${i}', this)">
+          📖 查看解析
+          <span style="margin-left:auto;font-size:0.75rem;">▼</span>
+        </button>
+        <div class="sentence-analysis" id="analysis-${i}">
+          <div class="analysis-text">${s.analysis}</div>
+          ${s.key_words.length ? `
+          <div style="font-size:0.85rem;font-weight:600;color:#1e40af;margin-bottom:0.4rem;">重點字詞</div>
+          <div class="key-words-list">
+            ${s.key_words.map(kw => `
+              <div class="key-word-item" onclick="openPopup({word:'${kw.word}',phonetic:'${kw.type}',meaning:'${kw.meaning}'})">
+                <span class="key-word-char">${kw.word}</span>
+                <div class="key-word-info">
+                  <div class="key-word-meaning">${kw.meaning}</div>
+                  <div class="key-word-type">${kw.type}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Apply vocab click on non-quiz views
+  if (currentView !== 'quiz') {
+    container.querySelectorAll('.vocab-word').forEach(el => {
+      el.addEventListener('click', () => openPopup({ word: el.dataset.word, phonetic: el.dataset.phonetic, meaning: el.dataset.meaning }));
+    });
+  }
+}
+
+function revealWord(el, word) {
+  el.textContent = word;
+  el.classList.add('revealed');
+}
+
+function toggleAnalysis(id, btn) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  btn.querySelector('span:last-child').textContent = el.classList.contains('open') ? '▲' : '▼';
+}
+
+async function init() {
+  // View toggle
+  document.getElementById('view-toggle').addEventListener('click', e => {
+    const btn = e.target.closest('.view-btn');
+    if (!btn) return;
+    currentView = btn.dataset.view;
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderSentences();
+  });
+
+  try {
+    classicalData = await loadData('classical.json');
+    filteredData = classicalData;
+    renderList(filteredData);
+  } catch(e) {
+    showError(document.getElementById('classical-list'));
+  }
+
+  initGradeTabs(document.getElementById('grade-tabs'), (grade) => {
+    filteredData = grade ? classicalData.filter(t => t.grade === grade) : classicalData;
+    renderList(filteredData);
+    if (document.getElementById('reading-view').style.display !== 'none') backToList();
+  });
+}
+
+init();
+</script>
+</body>
+</html>

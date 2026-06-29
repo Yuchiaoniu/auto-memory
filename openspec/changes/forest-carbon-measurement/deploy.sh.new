@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+cd ~/forest-carbon-measurement
+
+BEFORE=$(git rev-parse HEAD)
+git pull --ff-only origin master >> ~/deploy.log 2>&1
+AFTER=$(git rev-parse HEAD)
+
+if [ "$BEFORE" = "$AFTER" ]; then
+  echo "$(date '+%Y-%m-%d %H:%M:%S') no changes, skip restart" >> ~/deploy.log
+  exit 0
+fi
+
+# Skip restart if the only changed files are data-only paths that don't affect server behavior.
+# Currently: public/data/trees.json (pushed by githubSyncService after every tree).
+CHANGED_NON_DATA=$(git diff --name-only "$BEFORE" "$AFTER" | grep -v -E '^(public/data/trees\.json)$' | head -1)
+
+if [ -z "$CHANGED_NON_DATA" ]; then
+  echo "$(date '+%Y-%m-%d %H:%M:%S') new commit $AFTER (data-only: trees.json), skip restart" >> ~/deploy.log
+  exit 0
+fi
+
+echo "$(date '+%Y-%m-%d %H:%M:%S') new commit $AFTER, restarting..." >> ~/deploy.log
+
+if ! git diff --quiet "$BEFORE" "$AFTER" -- package.json; then
+  npm install --omit=dev --silent >> ~/deploy.log 2>&1
+fi
+
+pm2 restart forest-carbon >> ~/deploy.log 2>&1
+echo "$(date '+%Y-%m-%d %H:%M:%S') deploy done" >> ~/deploy.log

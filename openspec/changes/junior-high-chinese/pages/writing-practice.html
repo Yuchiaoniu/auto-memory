@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>寫作練習 - 國中國文學習平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    .content-area { max-width: 900px; margin: 0 auto; }
+    .panel { padding: 1.5rem; }
+
+    /* Topic cards */
+    .topic-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .topic-card:hover { border-color: var(--primary-light); box-shadow: var(--shadow-md); }
+    .topic-title { font-size: 1.1rem; font-weight: 700; }
+    .topic-meta { font-size: 0.85rem; color: #64748b; margin-top: 0.3rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .topic-detail { display: none; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+    .topic-detail.open { display: block; }
+    .topic-section { margin-bottom: 0.85rem; }
+    .topic-section-title { font-size: 0.88rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem; }
+    .outline-list { list-style: none; padding: 0; margin: 0; }
+    .outline-list li {
+      padding: 0.3rem 0 0.3rem 1.1rem;
+      position: relative;
+      font-size: 0.88rem;
+      color: #374151;
+    }
+    .outline-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+    }
+    .structure-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.5rem; }
+    .structure-block {
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.82rem;
+      color: #374151;
+    }
+    .structure-block strong { display: block; color: var(--primary); font-size: 0.8rem; margin-bottom: 0.2rem; }
+
+    /* Genre filter */
+    .genre-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .genre-btn {
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .genre-btn:hover { border-color: var(--primary-light); color: var(--primary); }
+    .genre-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* Guide cards */
+    .guide-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+    }
+    .guide-header {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 0.85rem 1.25rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .guide-body { padding: 1.25rem; }
+    .guide-method { margin-bottom: 1.25rem; }
+    .guide-method-name { font-weight: 700; color: var(--primary); font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .guide-method-desc { font-size: 0.88rem; color: #374151; line-height: 1.8; }
+    .guide-method-example {
+      margin-top: 0.4rem;
+      padding: 0.5rem 0.75rem;
+      background: #f0fdf4;
+      border-left: 3px solid #22c55e;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.85rem;
+      color: #166534;
+      line-height: 1.8;
+      font-style: italic;
+    }
+    .sample-sentences-box {
+      background: #fef3c7;
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      margin-top: 0.5rem;
+    }
+    .sample-sentences-title { font-size: 0.85rem; font-weight: 700; color: #92400e; margin-bottom: 0.4rem; }
+    .sample-sentence-item { font-size: 0.88rem; color: #78350f; padding: 0.25rem 0; }
+
+    /* Planner */
+    .planner-container { max-width: 720px; margin: 0 auto; }
+    .planner-select { margin-bottom: 1.25rem; }
+    .planner-select select {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: white;
+      cursor: pointer;
+    }
+    .planner-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+    .planner-saved-badge { display: none; font-size: 0.85rem; color: var(--success); align-items: center; gap: 0.3rem; }
+    .planner-saved-badge.show { display: flex; }
+
+    /* Sample essays */
+    .sample-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .sample-header {
+      background: #f8fafc;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .sample-title { font-size: 1.05rem; font-weight: 700; }
+    .sample-content {
+      padding: 1.25rem;
+      font-size: 0.95rem;
+      line-height: 2.1;
+      white-space: pre-line;
+    }
+    .sample-highlights { padding: 0.85rem 1.25rem; border-top: 1px solid var(--border); background: #fefce8; }
+    .sample-highlights-title { font-size: 0.85rem; font-weight: 700; color: #92400e; margin-bottom: 0.5rem; }
+    .highlight-item {
+      background: white;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .highlight-item:hover { background: #fef9c3; }
+    .highlight-sentence-preview { font-weight: 600; color: #78350f; background: #fef08a; padding: 2px 4px; border-radius: 3px; }
+    .highlight-technique { font-size: 0.78rem; color: #d97706; margin-top: 0.15rem; }
+
+    @media (max-width: 560px) {
+      .structure-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="../index.html" class="nav-back">← 首頁</a>
+  <span class="nav-logo">寫作練習</span>
+</nav>
+
+<div class="page-hero">
+  <h1>🖊️ 寫作練習</h1>
+  <p>題目庫 · 技巧指引 · 互動段落架構板 · 範文賞析</p>
+</div>
+
+<div class="module-tabs" id="module-tabs">
+  <button class="module-tab">題目庫</button>
+  <button class="module-tab">技巧指引</button>
+  <button class="module-tab">段落架構板</button>
+  <button class="module-tab">範文賞析</button>
+</div>
+
+<div class="content-area">
+
+  <!-- Panel 1: Topics -->
+  <div id="panel-topics" class="panel">
+    <div class="genre-filter" id="genre-filter-topics">
+      <button class="genre-btn active" data-genre="all">全部文體</button>
+    </div>
+    <div id="topics-list"><div class="loading">載入中…</div></div>
+  </div>
+
+  <!-- Panel 2: Guides -->
+  <div id="panel-guides" class="panel">
+    <div class="genre-filter" id="genre-filter-guides">
+      <button class="genre-btn active" data-genre="all">全部文體</button>
+    </div>
+    <div id="guides-list"><div class="loading">載入中…</div></div>
+  </div>
+
+  <!-- Panel 3: Planner -->
+  <div id="panel-planner" class="panel">
+    <div class="planner-container">
+      <div style="background:#eff6ff;border-radius:var(--radius-sm);padding:0.75rem 1rem;margin-bottom:1.25rem;font-size:0.88rem;color:#1e40af;">
+        💡 在下方三個區塊輸入你的寫作大綱，內容會自動儲存到瀏覽器。
+      </div>
+      <div class="planner-select">
+        <label style="font-size:0.88rem;font-weight:600;color:#475569;margin-bottom:0.4rem;display:block;">選擇題目（可選）</label>
+        <select id="planner-topic-select">
+          <option value="">-- 選擇題目 --</option>
+        </select>
+      </div>
+      <div id="planner-hint" style="display:none;background:#f0fdf4;border-radius:var(--radius-sm);padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:#166534;"></div>
+      <div class="planner-block">
+        <div class="planner-block-header">📌 開頭段落</div>
+        <textarea class="planner-textarea" id="planner-intro" placeholder="寫下你的開頭段落大綱或草稿…"></textarea>
+      </div>
+      <div class="planner-block">
+        <div class="planner-block-header">📝 中間發展</div>
+        <textarea class="planner-textarea" id="planner-body" placeholder="寫下發展段落的主要論點或事件…" style="min-height:140px;"></textarea>
+      </div>
+      <div class="planner-block">
+        <div class="planner-block-header">🏁 結尾段落</div>
+        <textarea class="planner-textarea" id="planner-conclusion" placeholder="寫下結尾的情感昇華或論點總結…"></textarea>
+      </div>
+      <div class="planner-actions">
+        <button class="btn btn-primary" onclick="savePlanner()">💾 儲存大綱</button>
+        <button class="btn btn-outline" onclick="clearPlanner()">清除</button>
+        <div class="planner-saved-badge" id="planner-saved-badge">✓ 已儲存</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 4: Samples -->
+  <div id="panel-samples" class="panel">
+    <div class="genre-filter" id="genre-filter-samples">
+      <button class="genre-btn active" data-genre="all">全部文體</button>
+    </div>
+    <div id="samples-list"><div class="loading">載入中…</div></div>
+  </div>
+
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+let topicsData = [];
+let guidesData = [];
+let samplesData = [];
+
+// --- Topics ---
+function renderTopics(data) {
+  const el = document.getElementById('topics-list');
+  if (!data.length) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>此文體暫無題目</p></div>'; return; }
+  el.innerHTML = data.map((t, i) => `
+    <div class="topic-card" onclick="toggleTopic('topic-detail-${i}', this)">
+      <div class="topic-title">${t.title}</div>
+      <div class="topic-meta">
+        <span class="badge badge-${gradeLabel(t.grade)==='七年級'?'blue':gradeLabel(t.grade)==='八年級'?'green':'purple'}">${gradeLabel(t.grade)}</span>
+        <span class="badge badge-${genreColor(t.genre)}">${t.genre}</span>
+      </div>
+      <div class="topic-detail" id="topic-detail-${i}">
+        <div class="topic-section">
+          <div class="topic-section-title">⚠️ 審題要點</div>
+          <p style="font-size:0.88rem;line-height:1.8;color:#334155;margin:0;">${t.exam_tips}</p>
+        </div>
+        <div class="topic-section">
+          <div class="topic-section-title">📐 段落結構建議</div>
+          <div class="structure-grid">
+            <div class="structure-block"><strong>開頭</strong>${t.structure.intro}</div>
+            <div class="structure-block"><strong>發展</strong>${t.structure.development}</div>
+            <div class="structure-block"><strong>結尾</strong>${t.structure.conclusion}</div>
+          </div>
+        </div>
+        <div class="topic-section">
+          <div class="topic-section-title">📋 五段式大綱</div>
+          <ul class="outline-list">
+            ${t.outline.map(o => `<li>${o}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTopic(id, card) {
+  const detail = document.getElementById(id);
+  detail.classList.toggle('open');
+}
+
+// --- Guides ---
+function renderGuides(data) {
+  const el = document.getElementById('guides-list');
+  if (!data.length) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>此文體暫無指引</p></div>'; return; }
+  el.innerHTML = data.map(g => `
+    <div class="guide-card">
+      <div class="guide-header">📘 ${g.genre}</div>
+      <div class="guide-body">
+        <p style="font-size:0.9rem;color:#374151;line-height:1.8;margin-bottom:1rem;">${g.description}</p>
+
+        <div style="font-weight:700;color:#1e3a8a;font-size:0.95rem;margin-bottom:0.75rem;">開頭技巧</div>
+        ${g.opening_methods.map(m => `
+          <div class="guide-method">
+            <div class="guide-method-name">▸ ${m.name}</div>
+            <div class="guide-method-desc">${m.description}</div>
+            <div class="guide-method-example">「${m.example}」</div>
+          </div>
+        `).join('')}
+
+        <div style="font-weight:700;color:#1e3a8a;font-size:0.95rem;margin-bottom:0.75rem;margin-top:0.5rem;">結尾技巧</div>
+        ${g.ending_methods.map(m => `
+          <div class="guide-method">
+            <div class="guide-method-name">▸ ${m.name}</div>
+            <div class="guide-method-desc">${m.description}</div>
+            <div class="guide-method-example">「${m.example}」</div>
+          </div>
+        `).join('')}
+
+        <div style="font-weight:700;color:#1e3a8a;font-size:0.95rem;margin-bottom:0.75rem;margin-top:0.5rem;">發展技巧</div>
+        ${g.development_tips.map(m => `
+          <div class="guide-method">
+            <div class="guide-method-name">▸ ${m.name}</div>
+            <div class="guide-method-desc">${m.description}</div>
+            <div class="guide-method-example">「${m.example}」</div>
+          </div>
+        `).join('')}
+
+        <div class="sample-sentences-box">
+          <div class="sample-sentences-title">💬 萬用佳句</div>
+          ${g.sample_sentences.map(s => `<div class="sample-sentence-item">• ${s}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// --- Planner ---
+function loadPlanner() {
+  document.getElementById('planner-intro').value = loadFromStorage('planner-intro', '');
+  document.getElementById('planner-body').value = loadFromStorage('planner-body', '');
+  document.getElementById('planner-conclusion').value = loadFromStorage('planner-conclusion', '');
+}
+
+function savePlanner() {
+  saveToStorage('planner-intro', document.getElementById('planner-intro').value);
+  saveToStorage('planner-body', document.getElementById('planner-body').value);
+  saveToStorage('planner-conclusion', document.getElementById('planner-conclusion').value);
+  const badge = document.getElementById('planner-saved-badge');
+  badge.classList.add('show');
+  setTimeout(() => badge.classList.remove('show'), 2000);
+}
+
+function clearPlanner() {
+  if (!confirm('確定要清除所有大綱內容？')) return;
+  ['planner-intro','planner-body','planner-conclusion'].forEach(id => {
+    document.getElementById(id).value = '';
+    saveToStorage(id, '');
+  });
+  showToast('大綱已清除', 'info');
+}
+
+function setupPlannerTopics(topics) {
+  const sel = document.getElementById('planner-topic-select');
+  topics.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = `${t.title}（${t.genre}）`;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => {
+    const topic = topics.find(t => t.id === sel.value);
+    const hint = document.getElementById('planner-hint');
+    if (!topic) { hint.style.display = 'none'; return; }
+    hint.style.display = 'block';
+    hint.innerHTML = `<b>${topic.title}</b><br>審題：${topic.exam_tips.slice(0, 80)}…<br>開頭建議：${topic.structure.intro.slice(0, 60)}…`;
+  });
+}
+
+// --- Samples ---
+function renderSamples(data) {
+  const el = document.getElementById('samples-list');
+  if (!data.length) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>此文體暫無範文</p></div>'; return; }
+  el.innerHTML = data.map(s => `
+    <div class="sample-card">
+      <div class="sample-header">
+        <div class="sample-title">${s.title}</div>
+        <span class="badge badge-${genreColor(s.genre)}">${s.genre}</span>
+      </div>
+      <div class="sample-content" id="sample-content-${s.id}">${s.content}</div>
+      <div class="sample-highlights">
+        <div class="sample-highlights-title">🌟 亮點標示 — 點擊查看技巧說明</div>
+        ${s.highlights.map((h, i) => `
+          <div class="highlight-item" onclick="openPopup({word:'${h.technique}',phonetic:'修辭技巧',meaning:'${h.explanation.replace(/'/g,"\\'")}' })">
+            <span class="highlight-sentence-preview">「${h.text.slice(0,30)}…」</span>
+            <div class="highlight-technique">技巧：${h.technique}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// --- Genre Filter Helper ---
+function initGenreFilter(filterId, data, renderFn) {
+  const genres = [...new Set(data.map(d => d.genre))];
+  const filterEl = document.getElementById(filterId);
+  genres.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'genre-btn';
+    btn.dataset.genre = g;
+    btn.textContent = g;
+    filterEl.appendChild(btn);
+  });
+  filterEl.addEventListener('click', e => {
+    const btn = e.target.closest('.genre-btn');
+    if (!btn) return;
+    filterEl.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const genre = btn.dataset.genre;
+    renderFn(genre === 'all' ? data : data.filter(d => d.genre === genre));
+  });
+}
+
+async function init() {
+  const tabs = document.getElementById('module-tabs');
+  const panels = ['panel-topics','panel-guides','panel-planner','panel-samples'].map(id => document.getElementById(id));
+  initModuleTabs(tabs, panels);
+
+  try {
+    [topicsData, guidesData, samplesData] = await Promise.all([
+      loadData('writing-topics.json'),
+      loadData('writing-guides.json'),
+      loadData('writing-samples.json')
+    ]);
+
+    renderTopics(topicsData);
+    renderGuides(guidesData);
+    renderSamples(samplesData);
+    setupPlannerTopics(topicsData);
+    loadPlanner();
+
+    initGenreFilter('genre-filter-topics', topicsData, renderTopics);
+    initGenreFilter('genre-filter-guides', guidesData, renderGuides);
+    initGenreFilter('genre-filter-samples', samplesData, renderSamples);
+
+    // Auto-save on input
+    ['planner-intro','planner-body','planner-conclusion'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => savePlanner());
+    });
+
+  } catch(e) {
+    showError(document.getElementById('topics-list'));
+  }
+}
+
+init();
+</script>
+</body>
+</html>
