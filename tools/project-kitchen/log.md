@@ -139,3 +139,64 @@
 規則已寫入記憶系統（feedback_project_file_structure.md），本檔（log.md）為 project-kitchen 補建。
 
 ---
+
+## 2026-06-29（續）
+
+### GitHub 歷史記錄清理
+
+Telegram Bot Token 曾明文出現在舊提交（`25428f9`）的 loop-starter.md 裡，GitHub Secret Scanning 發送警告信。
+使用 git-filter-repo 把整條歷史中的明文 token 替換成 `REDACTED_TELEGRAM_TOKEN`，強制推送到 GitHub，警告已解除。
+
+---
+
+### GCP 推送 GitHub 憑證設定（今日完成）
+
+從 Windows 憑證管理員取出本機已存的 GitHub OAuth token，透過 SSH 設定到 GCP 的 git remote URL。
+GCP 現在可以直接執行 `git push origin main`，不需要額外輸入憑證。
+同時修正了 force push 後 GCP 歷史記錄與 GitHub 不同步的問題（執行 `git fetch && git reset --hard origin/main`）。
+
+---
+
+### 學習系統迭代分析（第 17～28 輪，全部今日完成）
+
+**關鍵數字：** 40 次答題、正確率 32.5%、38/48 觀念已接觸、0 個已掌握、6 個待加強。
+
+**本輪系統自行修復的項目：**
+- 第 17 輪：修正 pick_question 這個函式（負責選題）的 intro_done 積壓邏輯
+- 第 18 輪：加入 almost_mastered 這個優先池（優先讓快達到掌握門檻的觀念出題）
+- 第 21～22 輪：stats 指令加入 almost_mastered 和 weak_concepts 欄位
+- 第 26 輪：query_concept_stats 這個統計查詢函式加入 30 天有效期過濾
+
+**第 28 輪發現的根本性格式限制（最重要）：**
+所有題目為開放問答，系統只能知道對錯，無法辨識使用者持有哪種錯誤心智模型。
+CLT（中央極限定理）、Bandwagon Effect（從眾效應）、CorrVsCause（相關與因果混淆）等偏弱觀念
+各有多種常見誤解路徑，但現行格式完全無法區分。
+
+---
+
+### 待實作任務：出題系統改為多選題格式
+
+**背景：** 第 28 輪確認的根本性限制。
+
+**具體修改項目：**
+1. 在每個題目加入四個選項（一個正確答案＋三個錯誤選項）
+2. 每個錯誤選項對應一條具體的錯誤心智模型路徑
+3. 修改資料庫 schema，在題目資料表新增 options_json 欄位（儲存四個選項及對應的心智模型標籤）
+4. 修改答題記錄資料表，新增 selected_option 欄位（記錄使用者選了哪個選項，不只記對錯）
+5. 修改 Telegram 推送格式，用 inline button 顯示四個選項
+6. 完成後執行 `git add && git commit && git push origin main`，並傳 Telegram 通知說明改了哪些檔案
+
+**相關檔案：**
+- 出題程式：`~/.claude/tools/project-kitchen/cross_subject_bot.py`
+- 資料庫：`/home/yuchi/cognitive-tests/practice.db`
+- 系統設計說明：`~/.claude/tools/project-kitchen/system-design.md`
+
+確認所有新專案必須建立四個標準檔案：
+- **log.md**：最近 20 條完整對話流水帳（使用者訊息 + Claude 回應）
+- **state.md**：進行中現況與近期進展脈絡
+- **memory.md**：重要數值資料、專案概況、歷年重大修改記錄
+- **tasks.md**：任務清單
+
+規則已寫入記憶系統（feedback_project_file_structure.md），本檔（log.md）為 project-kitchen 補建。
+
+---
