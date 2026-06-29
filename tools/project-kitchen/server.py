@@ -10,6 +10,13 @@ CHANGES = (
     else os.path.join(_CLAUDE_HOME, "openspec", "changes")
 )
 
+TRIGGER_DOCS = [
+    (re.compile(r'besu|gcp|vm\b|rpc|節點|私鏈|bootnode|gcloud', re.I),
+     os.path.join('docs', 'besu-reference.md')),
+    (re.compile(r'thesis.rewrite|論文改寫|論文段落|學術寫作', re.I),
+     os.path.join('docs', 'thesis-writing-rules.md')),
+]
+
 # In-memory conversation histories — avoids re-reading log.md and pattern poisoning
 # project -> [{"role": "user"/"assistant", "content": "..."}]
 chat_histories = {}
@@ -78,6 +85,39 @@ def append_log_turn(project_path, user_msg, response):
     with open(log_path, 'a', encoding='utf-8') as f:
         f.write(entry)
 
+def get_trigger_docs(user_msg):
+    extras = []
+    for pattern, rel_path in TRIGGER_DOCS:
+        if pattern.search(user_msg):
+            content = read_utf8(os.path.join(_CLAUDE_HOME, rel_path), limit=8000)
+            if content:
+                extras.append(f'=== 參考文件：{rel_path} ===\n{content}')
+    return extras
+
+
+def trim_log_if_needed(project_path, max_turns=20):
+    log_path = os.path.join(project_path, 'log.md')
+    if not os.path.exists(log_path):
+        return
+    with open(log_path, encoding='utf-8', errors='replace') as f:
+        content = f.read()
+    pat = re.compile(r'^## \d{4}-\d{2}-\d{2} \d{2}:\d{2}', re.MULTILINE)
+    matches = list(pat.finditer(content))
+    if len(matches) <= max_turns:
+        return
+    cutoff_idx = len(matches) - max_turns
+    cutoff_pos = matches[cutoff_idx].start()
+    first_pos = matches[0].start()
+    to_archive = content[first_pos:cutoff_pos]
+    to_keep = content[cutoff_pos:]
+    state_path = os.path.join(project_path, 'STATE.md')
+    with open(state_path, 'a', encoding='utf-8') as f:
+        f.write(f'\n\n---\n## 移入自 log.md（超過 {max_turns} 則）\n\n')
+        f.write(to_archive)
+    with open(log_path, 'w', encoding='utf-8') as f:
+        f.write(content[:first_pos] + to_keep)
+
+
 def append_impl_marker(project_path):
     """Insert [IMPL] marker after a spawn completes successfully."""
     log_path = os.path.join(project_path, 'log.md')
@@ -145,6 +185,8 @@ def chat():
         parts.append(f'=== 目前進度（STATE.md）===\n{state.strip()}')
     if pending:
         parts.append('=== 待辦任務 ===\n' + '\n'.join(pending[:20]))
+    for extra in get_trigger_docs(user_msg):
+        parts.append(extra)
     context = '\n\n'.join(parts)
 
     _SYSTEM = f"""你是專案「{project}」的對話助理。工作路徑：{project_path}
@@ -262,9 +304,7 @@ python {os.path.join(_CLAUDE_HOME, 'tools', 'read_pdf.py')} "<PDF路徑>" [--pag
 
 部署靜態網站到 GitHub Pages 時，預設使用 main 分支根目錄，不使用 docs 資料夾或其他分支。
 
-## 論文改寫句型規則
-
-對話中提到 thesis-rewrite / 論文改寫 / 論文段落 / 學術寫作 時，先讀 {os.path.join(_CLAUDE_HOME, 'docs', 'thesis-writing-rules.md')} 再回答。"""
+"""
 
     if history:
         thread = '\n'.join(f'使用者：{u}\n助理：{b}' for u, b in history)
@@ -329,6 +369,7 @@ python {os.path.join(_CLAUDE_HOME, 'tools', 'read_pdf.py')} "<PDF路徑>" [--pag
                 if len(history) > 20:
                     history[:] = history[-20:]
                 append_log_turn(project_path, user_msg, response_text)
+                trim_log_if_needed(project_path)
             yield f"data: {json.dumps({'done': True}, ensure_ascii=False)}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'t': f'[錯誤] {e}', 'done': True}, ensure_ascii=False)}\n\n"
