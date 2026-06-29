@@ -35,9 +35,7 @@ dotenv.txt
 # Local overrides (may contain secrets)
 settings.local.json
 
-# Per-project state (synced separately via openspec)
-STATE.md
-memory.md
+# Per-project state — now tracked in git for cross-device sync
 
 # Backup files
 *.bak
