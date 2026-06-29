@@ -360,7 +360,8 @@ def init_db():
     """)
     for col in ["qtype TEXT", "is_intro INTEGER DEFAULT 0",
                 "options_json TEXT", "selected_option INTEGER",
-                "source TEXT DEFAULT 'simulated'"]:
+                "source TEXT DEFAULT 'simulated'",
+                "mental_model_tag TEXT"]:
         try:
             con.execute(f"ALTER TABLE answers ADD COLUMN {col}")
         except sqlite3.OperationalError:
@@ -370,14 +371,15 @@ def init_db():
 
 
 def record_answer(iteration, subject, question, correct, is_intro=False,
-                  options_json=None, selected_option=None, source="simulated"):
+                  options_json=None, selected_option=None, source="simulated",
+                  mental_model_tag=None):
     ts = now_taipei().strftime("%Y-%m-%d %H:%M:%S")
     con = sqlite3.connect(DB_PATH)
     con.execute(
-        "INSERT INTO answers (iteration, ts, subject, chapter, concept, qtype, lv, correct, is_intro, options_json, selected_option, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO answers (iteration, ts, subject, chapter, concept, qtype, lv, correct, is_intro, options_json, selected_option, source, mental_model_tag) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (iteration, ts, subject, question["chapter"], question["concept"],
          question.get("qtype", ""), question["lv"], int(correct), int(is_intro),
-         options_json, selected_option, source),
+         options_json, selected_option, source, mental_model_tag),
     )
     con.commit()
     con.close()
@@ -395,7 +397,7 @@ def query_concept_stats():
                SUM(CASE WHEN is_intro IS NULL OR is_intro=0 THEN 1 ELSE 0 END) as seen,
                SUM(CASE WHEN is_intro IS NULL OR is_intro=0 THEN correct ELSE 0 END) as hits,
                GROUP_CONCAT(CASE WHEN is_intro IS NULL OR is_intro=0 THEN correct END, ',') as history
-        FROM (SELECT * FROM answers ORDER BY iteration ASC)
+        FROM (SELECT * FROM answers WHERE (source IS NULL OR source != 'simulated') ORDER BY iteration ASC)
         GROUP BY subject, concept
     """).fetchall()
     con.close()
@@ -813,6 +815,7 @@ def run_interactive():
                 options_json=pending["options_json"],
                 selected_option=sel_idx,
                 source="interactive",
+                mental_model_tag=sel_model,
             )
             update_state(pending["subject"], correct, state)
             save_state(state)
