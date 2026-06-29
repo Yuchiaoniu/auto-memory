@@ -997,6 +997,11 @@ if __name__ == "__main__":
         _db = query_concept_stats()
         _con_s = sqlite3.connect(DB_PATH)
         _ic = _con_s.execute("SELECT COUNT(*) FROM answers WHERE source='interactive'").fetchone()[0]
+        _intro_pending = _con_s.execute("""
+            SELECT COUNT(DISTINCT concept) FROM answers
+            WHERE is_intro=1 AND concept NOT IN
+                  (SELECT DISTINCT concept FROM answers WHERE is_intro=0)
+        """).fetchone()[0]
         _con_s.close()
         _summary = {}
         for _subj, _concepts in _db.items():
@@ -1005,11 +1010,13 @@ if __name__ == "__main__":
             _summary[_subj] = {
                 "total": len(QUESTIONS[_subj]),
                 "seen": sum(1 for d in _concepts.values() if d["total_seen"] > 0),
+                "formal_tested": sum(1 for d in _concepts.values() if d["seen"] > 0),
                 "mastered": sum(1 for d in _concepts.values() if is_mastered(d)),
                 "weak": len(_weak_names),
                 "weak_names": _weak_names,
                 "almost_mastered": _almost,
             }
+        _summary["intro_pending"] = _intro_pending
         _summary["interactive_mode_status"] = (
             f"active（{_ic}筆）" if _ic > 0 else "never_started（所有心智模型標籤閒置）"
         )
