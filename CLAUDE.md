@@ -203,6 +203,21 @@ python ~/.claude/tools/read_pdf.py "<PDF路徑>" [--pages 1-5]
 部署靜態網站到 GitHub Pages 時，預設使用 **main 分支根目錄**，不使用 docs 資料夾或其他分支。
 若有特殊原因需要偏離預設（例如 repo 根目錄有非網站內容），必須先說明原因並與使用者討論確認，不得自行決定。
 
+## GCP Kitchen 工作流程（嚴格執行）
+
+對話涉及任何 openspec 專案的實作、分析、或查詢時，
+一律透過 GCP kitchen 引擎處理，禁止在本機直接生成專案內容：
+
+```bash
+python ~/.claude/tools/gcp_ops.py chat <專案名稱> "<訊息>"
+```
+
+完成後讀回最新一輪結果：
+
+```bash
+python ~/.claude/tools/gcp_ops.py log <專案名稱> 1
+```
+
 ## Project Kitchen 網頁啟動
 
 單視窗多專案管理介面，整合畢業專題金字塔框架。啟動指令：
