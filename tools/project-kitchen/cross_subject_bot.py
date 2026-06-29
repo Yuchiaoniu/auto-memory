@@ -779,7 +779,16 @@ def run_interactive():
     offset = None
     pending = None  # {n, subject, q, options, options_json, is_intro, sent_ts, msg_id}
 
-    send("🎯 互動式多選題模式啟動！每題請點選 A / B / C / D。")
+    subj_counts = {s: len(QUESTIONS[s]) for s in SUBJECTS}
+    total_q = sum(subj_counts.values())
+    subj_lines = "\n".join(f"  • {s}：{n} 個觀念" for s, n in subj_counts.items())
+    send(
+        f"🎯 互動式多選題模式啟動！\n\n"
+        f"本系統涵蓋 {len(SUBJECTS)} 個科目、共 {total_q} 個觀念：\n{subj_lines}\n\n"
+        f"每題請點選 A / B / C / D。\n"
+        f"系統會追蹤每個觀念的掌握程度，連答對 3 次才停止推送，"
+        f"弱點觀念會優先出現。第一次接觸新觀念時不計入正確率（僅介紹）。"
+    )
     print(f"[{now_taipei().strftime('%H:%M:%S')}] 互動模式啟動")
 
     while True:
