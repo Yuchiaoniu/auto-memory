@@ -1024,6 +1024,15 @@ if __name__ == "__main__":
             f"真實答題{_ic}筆（weak_names 可信）" if _ic > 0
             else "全為模擬資料（weak_names 不可信，僅供參考）"
         )
+        _per_concept_acc = {}
+        for _subj, _concepts in _db.items():
+            _subj_acc = {}
+            for _c, _d in _concepts.items():
+                if _d["seen"] > 0:
+                    _subj_acc[_c] = {"n": _d["seen"], "acc": f"{round(_d['acc']*100)}%"}
+            if _subj_acc:
+                _per_concept_acc[_subj] = _subj_acc
+        _summary["per_concept_acc"] = _per_concept_acc
         print(_json.dumps(_summary, ensure_ascii=False))
 
     elif _cmd == "send":
