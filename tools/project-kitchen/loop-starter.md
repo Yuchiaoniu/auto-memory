@@ -45,14 +45,15 @@
 所有輸出（Telegram 訊息、回傳摘要）一律用白話中文，禁止使用縮寫或技術術語。
 
 【步驟一】SSH 到 GCP 取得觀念統計
-  指令：python3 /home/yuchi/cross_subject_bot.py stats
-  SSH 資訊：
+  指令：python3 ~/.claude/tools/project-kitchen/cross_subject_bot.py stats
+  SSH 資訊（Windows 本機執行時）：
     主機：35.227.93.38
     使用者：yuchi
-    金鑰：C:\Users\yuchi\.ssh\google_compute_engine
+    金鑰：~/.ssh/google_compute_engine
+  （若已在 GCP 上執行，直接在本機跑上面的指令，不需要 SSH）
 
 【步驟二】讀取系統設計說明
-  路徑：C:\Users\yuchi\.claude\tools\project-kitchen\system-design.md
+  路徑：~/.claude/tools/project-kitchen/system-design.md
 
 【步驟三】呼叫 Skill(openspec-explore) 進行六問自我檢查
   傳入系統設計說明全文和觀念統計，圍繞以下六個問題進行探索：
@@ -96,7 +97,7 @@
   Invoke-RestMethod -Uri "https://api.telegram.org/bot$TOKEN/sendMessage" -Method Post -ContentType "application/json; charset=utf-8" -Body $bytes
 
 【步驟五】如果探索工具決定修改
-  - 修改 C:\Users\yuchi\.claude\tools\project-kitchen\system-design.md
+  - 修改 ~/.claude/tools/project-kitchen/system-design.md
   - 如需改出題邏輯，修改 cross_subject_bot.py 並 SCP 到 GCP
 
 【步驟六】追加本輪記錄到 GCP
@@ -136,15 +137,15 @@ Q6 有沒有為各項機制做評分？
 
 ## GCP 相關路徑
 
-- 出題程式：`/home/yuchi/cross_subject_bot.py`
+- 出題程式：`~/.claude/tools/project-kitchen/cross_subject_bot.py`
 - 資料庫：`/home/yuchi/cognitive-tests/practice.db`
 - 探索記錄：`/home/yuchi/cognitive-tests/meta_log.md`
 
 ## Telegram 發送方式（PowerShell，必須用 UTF-8 位元組陣列）
 
 ```powershell
-$TOKEN = "REDACTED_TELEGRAM_TOKEN"
-$CHAT_ID = "7006586764"
+$TOKEN   = (Get-Content (Join-Path $HOME ".claude/.telegram-config") | Where-Object { $_ -match "^TOKEN=" }) -replace "^TOKEN=",""
+$CHAT_ID = (Get-Content (Join-Path $HOME ".claude/.telegram-config") | Where-Object { $_ -match "^CHAT_ID=" }) -replace "^CHAT_ID=",""
 $msg = "訊息內容"
 $json = @{ chat_id = $CHAT_ID; text = $msg } | ConvertTo-Json -Compress
 $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
