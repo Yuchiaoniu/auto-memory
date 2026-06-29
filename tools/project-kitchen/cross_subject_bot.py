@@ -359,7 +359,8 @@ def init_db():
         )
     """)
     for col in ["qtype TEXT", "is_intro INTEGER DEFAULT 0",
-                "options_json TEXT", "selected_option INTEGER"]:
+                "options_json TEXT", "selected_option INTEGER",
+                "source TEXT DEFAULT 'simulated'"]:
         try:
             con.execute(f"ALTER TABLE answers ADD COLUMN {col}")
         except sqlite3.OperationalError:
@@ -369,14 +370,14 @@ def init_db():
 
 
 def record_answer(iteration, subject, question, correct, is_intro=False,
-                  options_json=None, selected_option=None):
+                  options_json=None, selected_option=None, source="simulated"):
     ts = now_taipei().strftime("%Y-%m-%d %H:%M:%S")
     con = sqlite3.connect(DB_PATH)
     con.execute(
-        "INSERT INTO answers (iteration, ts, subject, chapter, concept, qtype, lv, correct, is_intro, options_json, selected_option) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO answers (iteration, ts, subject, chapter, concept, qtype, lv, correct, is_intro, options_json, selected_option, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         (iteration, ts, subject, question["chapter"], question["concept"],
          question.get("qtype", ""), question["lv"], int(correct), int(is_intro),
-         options_json, selected_option),
+         options_json, selected_option, source),
     )
     con.commit()
     con.close()
@@ -486,9 +487,10 @@ def pick_question(subject, db_stats):
     1. unseen     — 從未介紹過的觀念（total_seen=0）
     2. intro_done — 已介紹過但尚未正式測試（seen=0）
     3. weak       — 正式測試 acc<60%，非掌握
-    4. unconfirmed— seen<3 且 acc=100%，需二次確認
-    5. other      — 其餘非掌握
-    6. fallback   — 全部題目
+    4. needs_more — 正式測試 1-2 次且 acc>=60%（尚未達到掌握門檻，需補足次數）
+    5. unconfirmed— seen<3 且 acc=100%，需二次確認
+    6. other      — 其餘非掌握
+    7. fallback   — 全部題目
     額外：15% 機率直接抽 unconfirmed，確保不被 unseen 永遠排在前面。
     """
     subj_db = db_stats.get(subject, {})
@@ -503,6 +505,11 @@ def pick_question(subject, db_stats):
                    and subj_db[q["concept"]]["seen"] > 0
                    and not is_mastered(subj_db[q["concept"]])
                    and subj_db[q["concept"]]["acc"] < 0.6]
+    needs_more  = [q for q in QUESTIONS[subject]
+                   if q["concept"] in subj_db
+                   and 0 < subj_db[q["concept"]]["seen"] < MASTERY_MIN_SEEN
+                   and not is_mastered(subj_db[q["concept"]])
+                   and subj_db[q["concept"]]["acc"] >= 0.6]
     unconfirmed = [q for q in QUESTIONS[subject]
                    if q["concept"] in subj_db
                    and subj_db[q["concept"]]["seen"] > 0
@@ -515,12 +522,14 @@ def pick_question(subject, db_stats):
     if unconfirmed and random.random() < 0.15:
         pool = unconfirmed
     else:
-        pool = unseen or intro_done or weak or unconfirmed or other or QUESTIONS[subject]
+        pool = unseen or intro_done or weak or needs_more or unconfirmed or other or QUESTIONS[subject]
     return random.choice(pool)
 
 
 def simulate_student(question, subject, db_stats):
-    """根據 DB 中該觀念的歷史正確率（含近期趨勢加權）模擬作答。"""
+    """根據 DB 中該觀念的歷史正確率（含近期趨勢加權）模擬作答。
+    新觀念依難度分層：lv1→base_acc=0.45，lv2→base_acc=0.20（v36 修正）。
+    """
     subj_db = db_stats.get(subject, {})
     c_data  = subj_db.get(question["concept"])
     if c_data and c_data["seen"] > 0:
@@ -529,7 +538,7 @@ def simulate_student(question, subject, db_stats):
             recent_acc = sum(c_data["recent"][-2:]) / 2
             base_acc   = 0.6 * base_acc + 0.4 * recent_acc
     else:
-        base_acc = 0.3
+        base_acc = 0.45 if question.get("lv", 1) == 1 else 0.20
     return random.random() < (0.25 + base_acc * 0.55)
 
 
@@ -803,6 +812,7 @@ def run_interactive():
                 correct, is_intro=pending["is_intro"],
                 options_json=pending["options_json"],
                 selected_option=sel_idx,
+                source="interactive",
             )
             update_state(pending["subject"], correct, state)
             save_state(state)
@@ -819,6 +829,7 @@ def run_interactive():
                     False, is_intro=pending["is_intro"],
                     options_json=pending["options_json"],
                     selected_option=None,
+                    source="interactive",
                 )
                 pending = None
 
