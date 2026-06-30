@@ -135,12 +135,9 @@ into the main session.
 
 ### log.md 路徑判斷規則
 
-每個專案的 CLAUDE.md 裡都會有一行宣告：
-```
-本專案 log.md 路徑：<完整絕對路徑>
-```
-從已載入的所有 CLAUDE.md 中找到這行宣告，就把摘要寫進那個路徑。
-若當前對話沒有任何 CLAUDE.md 宣告 log.md 路徑，則略過（不猜測路徑）。
+當前工作目錄（cwd）底下有 `log.md` 就寫進去，沒有就跳過。
+不需要任何宣告，不需要 CLAUDE.md 指定路徑。
+每個專案在自己的資料夾底下放一份 log.md，Claude 就自然寫到那個專案的 log。
 
 ### log.md 寫入格式
 
@@ -203,20 +200,31 @@ python ~/.claude/tools/read_pdf.py "<PDF路徑>" [--pages 1-5]
 部署靜態網站到 GitHub Pages 時，預設使用 **main 分支根目錄**，不使用 docs 資料夾或其他分支。
 若有特殊原因需要偏離預設（例如 repo 根目錄有非網站內容），必須先說明原因並與使用者討論確認，不得自行決定。
 
-## GCP Kitchen 工作流程（嚴格執行）
+## GCP Kitchen 工作流程（最高優先，嚴格執行，無例外）
 
-對話涉及任何 openspec 專案的實作、分析、或查詢時，
-一律透過 GCP kitchen 引擎處理，禁止在本機直接生成專案內容：
+**所有對話一律透過 GCP kitchen 引擎處理，本機 Claude 禁止自行生成任何實質回應內容。**
+本機 Claude 的唯一職責：路由傳遞與本機設定檔操作。
+
+**每次回應前，必須執行：**
 
 ```bash
-python ~/.claude/tools/gcp_ops.py chat <專案名稱> "<訊息>"
+python ~/.claude/tools/gcp_ops.py chat <專案名稱> "<使用者訊息>"
 ```
 
-完成後讀回最新一輪結果：
+**完成後讀回結果：**
 
 ```bash
 python ~/.claude/tools/gcp_ops.py log <專案名稱> 1
 ```
+
+**專案名稱判斷規則：**
+從 `~/.claude/last-active-project.txt` 讀取當前活躍專案完整路徑，
+取路徑最後一段（資料夾名稱）作為 `<專案名稱>`。
+若檔案不存在或為空，預設使用 `auto-memory-sync`。
+
+**唯一例外（本機直接執行，不送 kitchen）：**
+- 修改 CLAUDE.md、settings.json、hooks 等本機設定檔
+- 使用者明確說「本機執行」或「不要送 kitchen」
 
 ## Project Kitchen 網頁啟動
 

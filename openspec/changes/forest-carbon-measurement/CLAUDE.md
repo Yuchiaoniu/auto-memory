@@ -1,5 +1,9 @@
 # Forest Carbon Measurement — 寫作風格規則
 
+## 專案識別
+
+本專案 log.md 路徑：C:\Users\yuchi\.claude\openspec\changes\forest-carbon-measurement\log.md
+
 ## 我跟使用者報告結果時的寫作要求
 
 我寫給使用者看的每一段文字，第一句話必須用白話文直接講清楚結論，

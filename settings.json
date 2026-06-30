@@ -87,6 +87,12 @@
             "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\yuchi\\.claude\\pre-compact-memory-save.ps1\"",
             "timeout": 40,
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "python \"C:\\Users\\yuchi\\.claude\\append-log.py\"",
+            "timeout": 35,
+            "async": true
           }
         ]
       }
