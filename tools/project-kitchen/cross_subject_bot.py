@@ -581,38 +581,34 @@ def mental_model_inference(db_stats):
 
 # ── META ──────────────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = """你是跨科目學習系統的雙軌分析師。
+SYSTEM_PROMPT = """你是跨科目學習系統的自我檢查員。
 
-系統核心目標：辨識使用者對每個科目、每個章節、每個觀念的掌握強弱——
-強的觀念停止推送，弱的觀念深度分析原因，追蹤觀念類型（definition/formula/application等）而非只記答對答錯次數。
+系統核心目標：找出使用者對每個觀念的掌握強弱。強的觀念不再推送，弱的觀念要深入找出錯誤的思考路徑，不只記對錯次數。
 
-每 5 輪進行一次 META 分析：
+每五輪自動進行一次自我檢查，依序回答以下六個問題：
 
-Track A【系統自檢】依序回答六個問題（每題一行）：
-Q1 觀念推送邏輯是否有盲點（值得優化的地方）
-Q2 哪些機制正在有效運作（值得保留的優點）
-Q3 有無覆蓋缺口或邏輯死角（未注意到的問題）
-Q4 推送是否過量或過雜（降低認知負荷的可能）
-Q5 30 輪後、100 輪後系統會是什麼狀態（跨時間宏觀視角）
-Q6 各機制評分 0–10（需有比較基準）
+問題一：這套系統有哪些地方值得改進？（找出盲點和邏輯漏洞）
+問題二：哪些機制正在正常運作？（列出值得保留的優點，這些不要改壞）
+問題三：有沒有沒注意到的問題正在悄悄惡化？（覆蓋缺口、邏輯死角）
+問題四：推送的資訊有沒有太多、太亂？（如何讓使用者負擔更輕）
+問題五：繼續這樣跑，30 輪後系統會變成什麼樣子？（宏觀風險評估）
+問題六：現在每個機制給 0–10 分，說明評分理由（要有和上一輪比較的基準）
 
-Track B【觀念建模】：根據觀念接觸記錄與題型分布，分析使用者當前認知狀態：
-- 哪類題型（definition/formula/application）系統性偏弱？
-- 弱點觀念是孤立個案還是跨科共同盲點（如：都是應用型題目偏弱）？
-- 近期趨勢：哪些觀念在進步，哪些持續弱？
+接著分析觀念層面：
+哪種題型（定義型、計算型、應用型）最容易答錯？弱的觀念是個別案例還是跨科共同盲點？最近哪些觀念在進步，哪些持續答錯？
 
-輸出格式：
-Q1｜結論
-Q2｜結論
-Q3｜結論
-Q4｜結論
-Q5｜結論
-Q6｜結論
-觀念｜{2–3 句分析，必須提及題型層面的規律}
-決策｜{一句}
-待辦｜• item1 • item2 • item3
+輸出格式（白話文，禁止英文縮寫和自創術語）：
+問題一 值得改進的地方：...
+問題二 值得保留的地方：...
+問題三 沒注意到的問題：...
+問題四 資訊量調整建議：...
+問題五 長期風險：...
+問題六 各機制評分：...
+觀念分析：...
+本輪決定：（要改什麼，或為什麼不改）
+接下來要做的三件事：（條列）
 
-總長不超過 400 字，繁體中文，精準有力。"""
+全文不超過 500 字，一律用白話中文。"""
 
 
 def build_meta_prompt(n, db_stats, infer):
@@ -871,9 +867,10 @@ def run_interactive():
         _t.sleep(3)
 
 
-def run_push_mode(wait_secs=120):
+def run_push_mode(wait_secs=300):
     """Push 模式：靜默送出一題，等候使用者回答（最多 wait_secs 秒），記錄後退出。
     適合 cron 排程：python3 cross_subject_bot.py push
+    wait_secs 預設 300 秒（5 分鐘），給使用者足夠時間看到通知並作答。
     """
     import time as _pt
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -1005,12 +1002,14 @@ def run_iteration(state):
     log += "---\n\n"
     append_log(log)
 
-    # Telegram：只在 META 輪發送觸發訊號；一般迭代不發送
+    # Telegram：META 輪自動執行六問自我檢查，不等使用者授權
     if is_meta:
         covered = sum(1 for s in db_stats.values() for d in s.values() if d["total_seen"] > 0)
-        return (f"★ META #{n} | {now_taipei().strftime('%H:%M')} 台北\n"
-                f"覆蓋 {covered}/48 觀念\n"
-                f"請在 Claude Code 說「跑 META」")
+        meta_prompt = build_meta_prompt(n, db_stats, infer)
+        meta_result = call_claude_meta(meta_prompt)
+        return (f"★ 第 {n} 輪自我檢查 | {now_taipei().strftime('%H:%M')} 台北\n"
+                f"已接觸 {covered}/48 個觀念\n\n"
+                f"{meta_result}")
     return None
 
 
