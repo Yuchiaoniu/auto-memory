@@ -579,94 +579,6 @@ def mental_model_inference(db_stats):
     return "\n".join(lines) if lines else "觀念覆蓋建立中。"
 
 
-# ── META ──────────────────────────────────────────────────────────────────────
-
-SYSTEM_PROMPT = """你是跨科目學習系統的自我檢查員。
-
-系統核心目標：辨識使用者對每個觀念持有什麼心智模型——
-強的觀念停止推送，弱的觀念深入找出「錯在哪條思考路徑」，
-不只記答對答錯次數。
-
-每 5 輪進行一次自我檢查，依序回答六個問題：
-
-問題一：觀念推送邏輯是否有盲點（值得優化的地方）
-問題二：哪些機制正在有效運作（值得保留的優點）
-問題三：有沒有狀態在持續惡化而沒被修正（覆蓋缺口或邏輯死角）
-問題四：推送是否過量或過雜（降低認知負荷的可能）
-問題五：這樣修改後有沒有可能出現什麼問題（評估修改副作用）
-問題六：各機制評分 0–10（需有比較基準）
-
-接著診斷心智模型：
-- 哪類題型（定義型、計算型、應用型）系統性偏弱？
-- 弱點觀念是孤立個案還是跨科共同盲點？
-- 近期趨勢：哪些觀念在進步，哪些持續弱？
-
-輸出格式（白話繁體中文，不用術語代號）：
-問題一：...
-問題二：...
-問題三：...
-問題四：...
-問題五：...
-問題六：...
-心智模型診斷：（2–3 句，必須提及錯誤思考路徑）
-本輪決定：（一句）
-接下來要做的事：• ... • ...
-
-總長不超過 400 字。"""
-
-
-def build_meta_prompt(n, db_stats, infer):
-    # 觀念明細
-    concepts_block = ""
-    for subject in SUBJECTS:
-        c = db_stats.get(subject, {})
-        if c:
-            rows = [f"  {k}({v['qtype']}): seen={v['seen']} acc={v['acc']*100:.0f}% recent={v['recent']}"
-                    for k, v in c.items()]
-            concepts_block += f"{subject}:\n" + "\n".join(rows) + "\n"
-
-    # 題型彙整
-    qt = query_qtype_stats(db_stats)
-    qt_block = "\n".join(
-        f"  {t}: {d['hits']}/{d['seen']} ({d['hits']/d['seen']*100:.0f}%)"
-        for t, d in sorted(qt.items()) if d["seen"] > 0
-    )
-
-    return (
-        f"迭代 #{n} META 分析\n\n"
-        f"## 各科觀念覆蓋狀態（qtype/seen/acc/recent3）\n{concepts_block}\n"
-        f"## 題型正確率分布\n{qt_block}\n\n"
-        f"## 觀念推導摘要\n{infer}\n\n"
-        f"請執行雙軌分析（Track A 六問自檢 + Track B 觀念建模，重點分析題型層面的規律）。"
-    )
-
-
-def call_claude_meta(prompt_text):
-    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".sys", delete=False, dir="/tmp") as sf:
-        sf.write(SYSTEM_PROMPT); sys_path = sf.name
-    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".usr", delete=False, dir="/tmp") as uf:
-        uf.write(prompt_text); usr_path = uf.name
-    script = f"""source /home/yuchi/.nvm/nvm.sh 2>/dev/null
-SYSP=$(cat {sys_path})
-cat {usr_path} | claude --print --dangerously-skip-permissions --system-prompt "$SYSP"
-"""
-    try:
-        result = subprocess.run(
-            ["bash", "-l"], input=script, capture_output=True, text=True, timeout=180,
-            env={**os.environ, "HOME": "/home/yuchi", "USER": "yuchi"},
-        )
-        out = result.stdout.strip()
-        return out if out else f"[無輸出 rc={result.returncode}: {result.stderr[:150]}]"
-    except subprocess.TimeoutExpired:
-        return "[逾時 180s]"
-    except Exception as e:
-        return f"[錯誤: {e}]"
-    finally:
-        for p in [sys_path, usr_path]:
-            try: os.unlink(p)
-            except: pass
-
-
 # ── Telegram & Log ────────────────────────────────────────────────────────────
 
 def send(text):
@@ -980,7 +892,6 @@ def run_iteration(state):
     # DB 更新後重新查（含本輪新記錄）
     db_stats = query_concept_stats()
     infer    = mental_model_inference(db_stats)
-    is_meta  = (n % 5 == 0)
     ts       = now_taipei().strftime("%Y-%m-%d %H:%M:%S (台北)")
 
     # 連續答錯提示：最近 2 次都錯（recent[-2:]==[0,0]）
@@ -993,27 +904,12 @@ def run_iteration(state):
     hint_line = f"\n💡 連續兩次答錯，正確答案：{q['a']}" if needs_hint else ""
     intro_tag = " [初次介紹]" if is_intro else ""
 
-    log = (f"## 迭代 #{n} | {ts} | {subject} / {q['concept']} ({q['qtype']}){intro_tag}"
-           f"{'  | ★META' if is_meta else ''}\n\n"
+    log = (f"## 迭代 #{n} | {ts} | {subject} / {q['concept']} ({q['qtype']}){intro_tag}\n\n"
            f"題目：{q['q']}\n正解：{q['a']}\n模擬作答：{'答對' if correct else '答錯'}{hint_line}\n\n"
            f"觀念快照：\n{infer}\n\n")
 
-    if is_meta:
-        qt = query_qtype_stats(db_stats)
-        qt_line = " | ".join(f"{t}:{d['hits']}/{d['seen']}" for t, d in sorted(qt.items()) if d["seen"] > 0)
-        log += f"### META #{n} 資料\n題型: {qt_line}\n\n"
-
     log += "---\n\n"
     append_log(log)
-
-    # Telegram：META 輪自動執行六問自我檢查，不等使用者授權
-    if is_meta:
-        covered = sum(1 for s in db_stats.values() for d in s.values() if d["total_seen"] > 0)
-        meta_prompt = build_meta_prompt(n, db_stats, infer)
-        meta_result = call_claude_meta(meta_prompt)
-        return (f"★ 第 {n} 輪自我檢查 | {now_taipei().strftime('%H:%M')} 台北\n"
-                f"已接觸 {covered}/48 個觀念\n\n"
-                f"{meta_result}")
     return None
 
 
@@ -1032,7 +928,7 @@ def main():
     send(f"跨科目學習 Bot v5.2 啟動\n"
          f"已累積 {state['iteration']} 輪，繼續迭代。\n"
          f"題庫：{sum(len(v) for v in QUESTIONS.values())} 題 / {len(QUESTIONS)} 科\n"
-         f"v5.2 新功能：is_intro 標記、連續錯誤提示、unconfirmed 15% 早抽、Telegram 只推 META 輪")
+         f"v5.3：每輪持續出題，分析與改進由外部迴圈腳本負責")
     try:
         tg = run_iteration(state)
         if tg:
