@@ -871,6 +871,89 @@ def run_interactive():
         _t.sleep(3)
 
 
+def run_push_mode(wait_secs=120):
+    """Push 模式：靜默送出一題，等候使用者回答（最多 wait_secs 秒），記錄後退出。
+    適合 cron 排程：python3 cross_subject_bot.py push
+    """
+    import time as _pt
+    os.makedirs(OUT_DIR, exist_ok=True)
+    init_db()
+    state = load_state()
+    db_stats = query_concept_stats()
+    state["iteration"] += 1
+    n = state["iteration"]
+    subject = pick_subject(state, db_stats)
+    q = pick_question(subject, db_stats)
+    is_intro = q["concept"] not in db_stats.get(subject, {})
+    options = build_options(q)
+    opts_json = json.dumps(
+        [{"text": o["text"], "is_correct": o["is_correct"], "model": o["model"]} for o in options],
+        ensure_ascii=False
+    )
+
+    # 先清空舊的 callback updates，避免誤收上一輪題目的按鈕回應
+    stale = get_tg_updates(offset=None, timeout=0)
+    offset = (stale[-1]["update_id"] + 1) if stale else None
+
+    # 送出題目（不送歡迎訊息，靜默啟動）
+    msg_id = send_question_mcq(n, subject, q, options)
+    sent_ts = now_taipei()
+    print(f"[push] #{n} {subject}/{q['concept']} 已送出，等候回答（最多 {wait_secs} 秒）")
+
+    # 等候使用者回答
+    while True:
+        elapsed = (now_taipei() - sent_ts).total_seconds()
+        if elapsed > wait_secs:
+            send(f"⏱ 未在 {wait_secs // 60} 分鐘內回答，略過：{q['concept']}\n正確答案：{q['a'][:200]}")
+            record_answer(
+                n, subject, q, False,
+                is_intro=is_intro,
+                options_json=opts_json,
+                selected_option=None,
+                source="interactive",
+            )
+            save_state(state)
+            print(f"[push] #{n} 逾時略過")
+            return
+
+        updates = get_tg_updates(offset=offset, timeout=10)
+        for upd in updates:
+            offset = upd["update_id"] + 1
+            cb = upd.get("callback_query")
+            if not cb:
+                continue
+            data = cb.get("callback_data", "A:0")
+            letter, is_correct_str = data.split(":")
+            correct = bool(int(is_correct_str))
+            sel_idx = "ABCD".index(letter)
+            sel_model = options[sel_idx]["model"]
+
+            answer_callback(cb["id"], correct)
+            correct_text = q["a"]
+            result_msg = (
+                f"{'✅' if correct else '❌'} 選了 {letter}（{options[sel_idx]['text'][:60]}）\n"
+                f"正確答案：{correct_text[:200]}"
+            )
+            if not correct:
+                result_msg += f"\n心智模型標籤：{sel_model}"
+            send(result_msg)
+
+            record_answer(
+                n, subject, q, correct,
+                is_intro=is_intro,
+                options_json=opts_json,
+                selected_option=sel_idx,
+                source="interactive",
+                mental_model_tag=sel_model,
+            )
+            update_state(subject, correct, state)
+            save_state(state)
+            print(f"[push] #{n} {subject}/{q['concept']} → {'O' if correct else 'X'} model={sel_model}")
+            return
+
+        _pt.sleep(1)
+
+
 def append_log(text):
     with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(text)
@@ -1072,6 +1155,9 @@ if __name__ == "__main__":
 
     elif _cmd == "interactive":
         run_interactive()
+
+    elif _cmd == "push":
+        run_push_mode()
 
     else:
         main()
