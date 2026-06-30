@@ -205,7 +205,7 @@ async function init() {
 
 async function loadProjects() {
   try {
-    const r = await fetch('/api/projects');
+    const r = await fetch('api/projects');
     projects = await r.json();
   } catch(e) {
     console.error('loadProjects', e);
@@ -292,7 +292,7 @@ function switchTab(name) {
 
 function closeTab(e, name) {
   e.stopPropagation();
-  fetch('/api/reset', {method:'POST', headers:{'Content-Type':'application/json'},
+  fetch('api/reset', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({project: name})}).catch(()=>{});
   openTabs = openTabs.filter(t => t.name !== name);
   const pane = document.querySelector(`.chat-pane[data-name="${name}"]`);
@@ -371,7 +371,7 @@ async function sendMsg(name) {
 
   let buf = '';
   try {
-    const res = await fetch('/api/chat', {
+    const res = await fetch('api/chat', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({project: name, msg})
@@ -405,7 +405,7 @@ async function sendMsg(name) {
 }
 
 function stopChat(name) {
-  fetch('/api/stop', {method:'POST', headers:{'Content-Type':'application/json'},
+  fetch('api/stop', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({project: name})}).catch(()=>{});
   streaming = false;
   setSendEnabled(name, true);
