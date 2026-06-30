@@ -65,6 +65,25 @@
 fork 子代理繼承完整對話脈絡，會把完整探索輸出傳回主要對話視窗，且會自行排程下一輪。
 改用一般 Sonnet 子代理（不繼承歷史），完整內容走 Telegram 通道，主要對話只收摘要。
 
+### 2026-06-30：cron TZ 前綴寫法修正（push 模式首次真正觸發）
+
+Vixie cron 3.0pl1（GCP Debian）**不支援** `TZ=Asia/Taipei 0 8,12,18 * * * cmd` 這種每行前綴語法。
+第 67 輪加入 TZ 前綴後，push cron 從未觸發（syslog 無記錄）。
+
+修正方式：改為 UTC 時間直算：
+- 台北 08:00 = UTC 00:00
+- 台北 12:00 = UTC 04:00
+- 台北 18:00 = UTC 10:00
+
+正確的 crontab 行：
+```
+0 0,4,10 * * * /usr/bin/python3 /home/yuchi/.claude/tools/project-kitchen/cross_subject_bot.py push >> /home/yuchi/cognitive-tests/push_bot.log 2>&1
+```
+
+首次真正觸發預計：今日（2026-06-30）台北 18:00（UTC 10:00）。
+
+---
+
 ### 2026-06-29：Telegram 傳送必須用 UTF-8 位元組陣列
 
 PowerShell 用 `Invoke-RestMethod` 傳送 JSON 時，預設不使用 UTF-8，中文會顯示為問號。
