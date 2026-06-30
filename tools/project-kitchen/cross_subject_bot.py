@@ -808,7 +808,16 @@ def run_push_mode(wait_secs=300):
     stale = get_tg_updates(offset=None, timeout=0)
     offset = (stale[-1]["update_id"] + 1) if stale else None
 
-    # 送出題目（不送歡迎訊息，靜默啟動）
+    # 首次真實互動推題加入說明訊息，避免使用者困惑（模擬資料不算）
+    _push_con = sqlite3.connect(DB_PATH)
+    _prev_interactive = _push_con.execute(
+        "SELECT COUNT(*) FROM answers WHERE source='interactive'"
+    ).fetchone()[0]
+    _push_con.close()
+    if _prev_interactive == 0:
+        send("每日跨科目練習正式啟動，每天 08:00 / 12:00 / 18:00 各推一題，答題後立即顯示解析。")
+
+    # 送出題目
     msg_id = send_question_mcq(n, subject, q, options)
     sent_ts = now_taipei()
     print(f"[push] #{n} {subject}/{q['concept']} 已送出，等候回答（最多 {wait_secs} 秒）")
@@ -996,6 +1005,7 @@ if __name__ == "__main__":
             WHERE is_intro=1 AND concept NOT IN
                   (SELECT DISTINCT concept FROM answers WHERE is_intro=0)
         """).fetchone()[0]
+        _total_records = _con_s.execute("SELECT COUNT(*) FROM answers").fetchone()[0]
         _con_s.close()
         _summary = {}
         for _subj, _concepts in _db.items():
@@ -1016,7 +1026,8 @@ if __name__ == "__main__":
         )
         _summary["data_reliability"] = (
             f"真實答題{_ic}筆（weak_names 可信）" if _ic > 0
-            else "全為模擬資料（weak_names 不可信，僅供參考）"
+            else ("尚無任何答題記錄，系統就緒等待首次推題" if _total_records == 0
+                  else "全為模擬資料（weak_names 不可信，僅供參考）")
         )
         _per_concept_acc = {}
         for _subj, _concepts in _db.items():
