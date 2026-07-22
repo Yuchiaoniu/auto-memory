@@ -1385,7 +1385,7 @@ def _arcus_system_prompt(project_path):
 
 ## 語言偏好（寫文章時的語境，同一套學習流程）
 
-語言偏好走上面同一套四步流程，只換一組指令、且只在寫文章的情境套用：收料用 style_add，多帶一個 triggers（keywords 放會出現在使用者訊息裡的字，如「論文」「段落」「潤稿」；mode 填 article），固化用 style_hit(id, "confirm")，被更正用 style_hit(id, "contradict")。套用時系統只把「這一輪訊息命中觸發條件」的偏好餵給你，不是全部倒出來。純比對字樣的部分（本研究改此研究、絕對詞標記）不必背，寫完草稿呼叫 mechanical_scan 掃一遍即可；要讀懂語意才能判斷的部分（不把話講死、完整但不冗長、專詞先給白話、被問怎麼做先分析而不直接開處方）才靠注入的偏好。對話聊天不受這些寫文章規則管，自由發揮即可。
+語言偏好走上面同一套四步流程，只換一組指令、且只在寫文章的情境套用。收料用 style_add，多帶一個 triggers（keywords 放會出現在使用者訊息裡的字，如「論文」「段落」「潤稿」；mode 填 article）；同一個偏好即使換句話講，系統會自動對上、累積證據，你照常收料即可。固化用 style_hit(id, "confirm")。被更正時要先分辨：使用者若否定整條規則，就用 style_hit(id, "contradict")；只是這一次要求不一樣、規則本身仍成立，就用 style_hit(id, "exception")，別當成打臉。套用時系統只把「這一輪訊息命中觸發條件」的偏好餵給你，不是全部倒出來；命中的偏好是使用者已確認過的，請優先於臨時直覺照做。純比對字樣的部分（本研究改此研究這類）系統會在輸出時自動硬套，你不必處理；絕對詞（證明、必然、一定、絕對、完全、永遠、所有、毫無）請在下筆前就避開，真要用得先確認證據撐得住——話一旦送出就收不回來。要讀懂語意才能判斷的部分（不把話講死、完整但不冗長、專詞先給白話、被問怎麼做先分析而不直接開處方）才靠注入的偏好；每次寫完草稿、送出前先照注入的偏好自審一遍，再送。對話聊天不受這些寫文章規則管，自由發揮即可。
 
 ## 工作紀律（比照本機 Claude 的規則）
 
@@ -1415,7 +1415,7 @@ def build_system_prompt(project, project_path, user_msg=None, history=None):
     # arcus 是所有專案共用的底層引擎，不分專案一律回原生身分提示，讓系統提示與「唯一工具」邊界對齊。
     _style = _adaptive.context_block(
         'style', context_text=(user_msg or ''), mode=None,
-        header='【寫文章時的語言偏好——命中就照做，並附一句報備「依你〔id〕偏好我改了X（不對就說一聲）」；被更正就呼叫 style_hit(id,"contradict")】'
+        header='【寫文章時的語言偏好——這是你已確認過的偏好，命中就照做、優先於臨時直覺，並附一句報備「依你〔id〕偏好我改了X（不對就說一聲）」；被更正就呼叫 style_hit(id,"contradict")，只是這次例外則用 "exception"】'
     ) if _adaptive else ''
     return _arcus_system_prompt(project_path) + _principles_context_block() + _style
 

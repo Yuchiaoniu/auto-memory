@@ -93,6 +93,10 @@ app = Flask(__name__, static_folder='.')
 import uuid as _uuid_addon
 from arcus_core import _arcus_mcp_handle as _mcp_handle_addon
 from arcus_core import _arcus_set_request_project as _set_proj_addon, _arcus_clear_request_project as _clr_proj_addon
+try:
+    from arcus_core import _adaptive as _adaptive
+except Exception:
+    _adaptive = None
 def _arcus_mcp_reply(payload, accept):
     if 'text/event-stream' in accept:
         return Response('event: message\ndata: ' + json.dumps(payload, ensure_ascii=False) + '\n\n',
@@ -685,6 +689,8 @@ def chat():
                         for block in event.get('message', {}).get('content', []):
                             if block.get('type') == 'text':
                                 text = block.get('text', '')
+                                if _adaptive is not None and text:
+                                    text = _adaptive.hard_subs(text)
                                 if text:
                                     text_chunks.append(text)
                                     # 20.3 累積該回合輸出文字（截斷，避免過長）
