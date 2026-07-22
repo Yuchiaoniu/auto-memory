@@ -642,3 +642,16 @@ Patch 1 已把統一模組接進 core 並上線、通過外部驗證，全部是
 驗證：三檔 py_compile 通過；純函式與唯讀分派測試全綠（換句話合併、不同規則不併、淨證據升級、久置降級、噪音退役、硬替換、絕對詞標記、§92 principle 未受影響）；systemctl restart arcus 後 active、開機無錯；外部網址 HTTP 200。
 
 未做（待後續討論）：語意層去重仍是字集近似、非嵌入模型；principle 尚未併入本骨架；弱點五封不了頂，只墊高地板。
+
+
+### §95 思考原則併入統一模組（2026-07-23 上線、外部驗證）
+
+承 §94，把思考原則（principle）從 arcus_core.py 的舊 inline 實作抽出，改由統一模組 arcus_adaptive.py 承載，讓 §94 的五點修正同時涵蓋思考原則與語言偏好，兩者共用同一支檔案：
+（一）舊 inline 函式（principle_add／principle_hit／principle_list／_principles_context_block，連同 _principles_load／_save／_promote 等私有輔助與 _PRINCIPLE_PROMOTE_EVIDENCE 常數）整段移除；arcus_core.py 只留同名薄包裝，轉呼叫 _adaptive.rule_add／rule_hit／rule_list／context_block(kind='principle')。分派點與系統提示呼叫點（build_system_prompt 的 _principles_context_block()）不變。
+（二）思考原則因此自動獲得五點修正：換句話講同一條原則會正規化字集去重、累加證據（弱點一）；升級改看淨證據、打臉不再永久封殺、新增 exception 一次性例外（弱點四）；暫定噪音逾 30 天退役、live 逾 120 天未再觀察降級（弱點三）。
+（三）D4「預設值而非眼罩」屬提示層語意判斷、不寫進計數骨架：過程型／結論型的教學段原文保留，並把「結論型只是預設值、不是眼罩，這次若有更好替代方案必須點出」再寫進每輪注入的思考原則 header，讓 D4 立場在判斷當下更難被略過。教學段另補「換句話自動合併」與「exception 例外」兩句，讓引擎用得到新能力。
+（四）存量無縫：思考原則 store 路徑仍是 arcus_user_model.jsonl，與舊 inline 相同；併入時存量為 0 筆，無資料遷移風險。舊記錄缺 triggers／exceptions 欄位時，骨架以預設值相容。
+
+驗證（改道暫存存量、不碰正式檔）：走 arcus_core 薄包裝的真實呼叫路徑——換句話合併（deduped、evidence=2）、confirm 淨證據升 live（evidence=3）、exception 記次（exceptions=1）、list 保留舊鍵名 principles、注入 header 保住 D4（含「不是眼罩」「替代方案」）、分派 principle_add／principle_list 正常、style 未受影響；py_compile 通過、無殘留孤兒引用；systemctl restart arcus 後 active、開機無錯；外部網址 HTTP 200。
+
+至此 §93 盤點的統一工作完成：principle 與 style 共用 arcus_adaptive 一支骨架、一套五點修正。未做（待後續）：語意層去重仍是字集近似、非嵌入模型；觀察期後再回頭調淘汰門檻（30／120 天）與去重係數（0.65／0.55）。

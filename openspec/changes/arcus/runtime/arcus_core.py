@@ -1374,10 +1374,10 @@ def _arcus_system_prompt(project_path):
 
 你在學這位使用者的設計思考模式：把他每次實質回答背後的原則萃取下來、存起來、下次直接套用，讓他不必一再重講同一套想法。四步，用三個 arcus_do 指令操作：
 
-- 收料：使用者給了實質回答（不是單純「好」「可以」）後，判斷這是不是一條可重用的原則（例如「面對不可逆的外推、又有分歧時，先把狀況攤清楚再問範圍」）。先用 principle_list 看有沒有既有同類；沒有才用 principle_add 寫一條（when 情境／then 偏好／because 本質／scope 適用範圍）。這條先是暫定，不會自動拿去用。
+- 收料：使用者給了實質回答（不是單純「好」「可以」）後，判斷這是不是一條可重用的原則（例如「面對不可逆的外推、又有分歧時，先把狀況攤清楚再問範圍」）。先用 principle_list 看有沒有既有同類；沒有才用 principle_add 寫一條（when 情境／then 偏好／because 本質／scope 適用範圍）。這條先是暫定，不會自動拿去用。同一條原則即使換句話講，系統會自動對上、把證據累加到既有那條，你照常收料即可。
 - 固化：同一條原則又被觀察到成立，呼叫 principle_hit(id, "confirm")；累積到門檻且沒被打臉，它自動升為上線。
 - 套用：每輪開頭系統會把上線原則餵給你。碰到新問題若命中某條上線原則，直接照做、不要問，但一定附一句報備「依你〔id〕原則我選了X（不對就說一聲）」。沒有原則命中、或兩條原則打架，這時才問——問的正好是更深、沒被涵蓋的那一題。
-- 打臉：使用者更正了你照原則做的決定，立刻呼叫 principle_hit(id, "contradict")，那條退回暫定、不再自動套用。錯誤當場吸收、不累積。
+- 打臉：使用者更正了你照原則做的決定，立刻呼叫 principle_hit(id, "contradict")，那條退回暫定、不再自動套用。錯誤當場吸收、不累積。要先分辨：使用者若否定整條原則才用 contradict；只是這次情況特別、原則本身仍成立，改用 principle_hit 帶 exception，別當成打臉。被打臉的原則日後淨證據重新達標仍可再上線，不是永久封殺。
 
 原則分兩種，套用方式不同：過程型原則（例如「先攤清狀況再問範圍」「先講結論再展開」）只規範你切入問題的姿態、不碰答案內容，命中就照做。結論型原則（例如「架構偏好最簡方案」）會鎖定答案內容，這時原則只是預設值、不是眼罩——你照樣以該偏好當主推，但只要這次真有一個實質更好或更有意思的替代方案，就必須點出來：「依你〔id〕原則我選了X；不過這次Y可能更合適／更值得一看，因為……」。學到的偏好只設定起點、永遠不封路，別讓省時壓掉了該有的發散。
 
@@ -3157,124 +3157,55 @@ def _memory_maybe_extract(project_path, user_msg, response_text):
 # 把使用者答案的本質萃取成一條白話條件式原則，存成可讀 jsonl；信心用離散計數表示
 # （evidence 觀察次數／contradicted 被打臉次數），不做梯度、不存純量權重。
 # 使用者的設計思考模式跨專案共用，故存於全域單檔。
-import json as _pjson
+# ===== 思考原則：已併入統一自適應模組 arcus_adaptive（kind='principle'）=====
+# 舊 inline 實作（逐字去重、evidence>=2 且 contradicted==0 才升、無淘汰）已退場，
+# 改由 arcus_adaptive 提供五點修正後的骨架：正規化字集去重、淨證據升級、
+# exception 例外信號、_sweep 淘汰與降級。這裡只留薄包裝，維持既有分派與系統提示呼叫點不變。
+# D4「預設值而非眼罩」屬提示層語意判斷，由下面的注入 header 與教學段承載，不寫進計數骨架。
+_ARCUS_USER_MODEL = '/home/yuchi/.claude/arcus_user_model.jsonl'  # 實際讀寫在 arcus_adaptive，保留常數供既有引用
 
-_ARCUS_USER_MODEL = '/home/yuchi/.claude/arcus_user_model.jsonl'
-_PRINCIPLE_PROMOTE_EVIDENCE = 2   # evidence 達此值且未被打臉 → tentative 升 live
+_PRINCIPLE_HEADER = (
+    '【你對這位使用者已萃取的設計思考原則——這是你已確認過的偏好，優先於臨時直覺。'
+    '過程型原則（規範切入問題的姿態、不碰答案內容）命中就照做；'
+    '結論型原則（鎖定答案內容）只是預設值、不是眼罩：照該偏好當主推，'
+    '但這次若真有一個實質更好或更有意思的替代方案，必須點出來'
+    '「依你〔id〕原則我選了X；不過這次Y可能更合適／更值得一看，因為……」，別讓省時壓掉該有的發散。'
+    '命中請附一句報備「依你〔id〕原則我選了X（不對就說一聲）」；'
+    '被更正就呼叫 principle_hit(id,contradict)，只是這次特別一點、規則仍成立則用 principle_hit(id,exception)】'
+)
 
-def _principles_now():
-    import datetime as _dt
-    return _dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-def _principles_load():
-    items = []
-    try:
-        with io.open(_ARCUS_USER_MODEL, encoding='utf-8') as _f:
-            for _line in _f:
-                _line = _line.strip()
-                if not _line:
-                    continue
-                try:
-                    items.append(_pjson.loads(_line))
-                except Exception:
-                    continue
-    except FileNotFoundError:
-        pass
-    return items
-
-def _principles_save(items):
-    os.makedirs(os.path.dirname(_ARCUS_USER_MODEL), exist_ok=True)
-    _tmp = _ARCUS_USER_MODEL + '.tmp'
-    with io.open(_tmp, 'w', encoding='utf-8') as _f:
-        for _it in items:
-            _f.write(_pjson.dumps(_it, ensure_ascii=False) + '\n')
-    os.replace(_tmp, _ARCUS_USER_MODEL)
-
-def _principles_next_id(items):
-    mx = 0
-    for _it in items:
-        try:
-            _n = int(str(_it.get('id', '')).split('_')[-1])
-            if _n > mx:
-                mx = _n
-        except Exception:
-            pass
-    return 'p_%d' % (mx + 1)
-
-def _principle_promote(it):
-    if int(it.get('evidence', 0)) >= _PRINCIPLE_PROMOTE_EVIDENCE and int(it.get('contradicted', 0)) == 0:
-        it['status'] = 'live'
 
 def principle_add(when, then, because=None, scope=None):
-    """(1)收料：寫入一條候選原則，初始 tentative、evidence=1。完全相同的既有原則改為再觀察一次。"""
-    when = (when or '').strip()
-    then = (then or '').strip()
-    if not when or not then:
-        return {'ok': False, 'error': 'when 與 then 皆不可空'}
-    items = _principles_load()
-    for it in items:
-        if (it.get('when', '').strip() == when and it.get('then', '').strip() == then
-                and it.get('status') != 'retired'):
-            it['evidence'] = int(it.get('evidence', 0)) + 1
-            _principle_promote(it)
-            it['last'] = _principles_now()
-            _principles_save(items)
-            return {'ok': True, 'id': it['id'], 'status': it['status'], 'deduped': True, 'record': it}
-    rec = {
-        'id': _principles_next_id(items),
-        'when': when, 'then': then,
-        'because': (because or '').strip(),
-        'scope': (scope or '全域').strip(),
-        'evidence': 1, 'contradicted': 0, 'status': 'tentative',
-        'born': _principles_now(), 'last': _principles_now(),
-    }
-    items.append(rec)
-    _principles_save(items)
-    return {'ok': True, 'id': rec['id'], 'status': rec['status'], 'record': rec}
+    """收料薄包裝：轉呼叫統一模組。同一條原則換句話講也會自動對上、累積證據（弱點一）。"""
+    if not _adaptive:
+        return {'ok': False, 'error': '自適應模組未載入'}
+    return _adaptive.rule_add('principle', when, then, because, scope, None)
+
 
 def principle_hit(pid, kind):
-    """(2)固化／(4)打臉：confirm→evidence+1，達門檻且未被打臉即升 live；contradict→contradicted+1，退回 tentative。"""
-    kind = (kind or '').strip()
-    items = _principles_load()
-    hit = None
-    for it in items:
-        if it.get('id') == pid:
-            hit = it
-            break
-    if hit is None:
-        return {'ok': False, 'error': '找不到原則 %s' % pid}
-    if kind == 'confirm':
-        hit['evidence'] = int(hit.get('evidence', 0)) + 1
-        _principle_promote(hit)
-    elif kind == 'contradict':
-        hit['contradicted'] = int(hit.get('contradicted', 0)) + 1
-        hit['status'] = 'tentative'
-    else:
-        return {'ok': False, 'error': 'kind 必須是 confirm 或 contradict'}
-    hit['last'] = _principles_now()
-    _principles_save(items)
-    return {'ok': True, 'id': pid, 'status': hit['status'],
-            'evidence': hit['evidence'], 'contradicted': hit['contradicted']}
+    """固化／打臉／例外薄包裝：confirm 升級走淨證據、contradict 不再永久封殺、exception 一次性例外（弱點四）。"""
+    if not _adaptive:
+        return {'ok': False, 'error': '自適應模組未載入'}
+    return _adaptive.rule_hit('principle', pid, (kind or '').strip())
+
 
 def principle_list(status=None):
-    """列出原則供檢視；status 可填 live／tentative／retired，不填給全部。"""
-    items = _principles_load()
-    if status:
-        items = [it for it in items if it.get('status') == status]
-    return {'ok': True, 'count': len(items), 'principles': items}
+    """列出薄包裝：保留舊回傳鍵名 principles 供既有呼叫端相容；列出前統一模組會先跑淘汰（弱點三）。"""
+    if not _adaptive:
+        return {'ok': True, 'count': 0, 'principles': []}
+    r = _adaptive.rule_list('principle', status)
+    if r.get('ok'):
+        return {'ok': True, 'count': r.get('count', 0), 'principles': r.get('rules', [])}
+    return r
+
 
 def _principles_context_block(limit=20):
-    """(3)套用：把 live 原則做成注入文字，餵進每輪系統提示。無 live 原則回空字串、不佔提示。"""
-    items = [it for it in _principles_load() if it.get('status') == 'live']
-    if not items:
+    """注入薄包裝：把 live 思考原則做成注入文字，D4「預設值而非眼罩」立場寫進 header。無 live 原則回空字串。"""
+    if not _adaptive:
         return ''
-    items = items[-limit:]
-    lines = ['\n【你對這位使用者已萃取的設計思考原則——命中就照做，並附一句報備「依你〔id〕原則我選了X（不對就說一聲）」；被更正就呼叫 principle_hit(id,"contradict")】']
-    for it in items:
-        lines.append('- 〔%s｜%s〕當 %s → 偏好 %s（本質：%s）'
-                     % (it.get('id'), it.get('scope', '全域'),
-                        it.get('when'), it.get('then'), it.get('because', '')))
-    return '\n'.join(lines) + '\n'
+    return _adaptive.context_block('principle', context_text='', mode=None,
+                                   header=_PRINCIPLE_HEADER, limit=limit)
+
 
 def _arcus_do_dispatch(cmd, payload):
     """arcus_do 的唯一分派點。回傳可 JSON 序列化的 dict（含 ok 欄位）。"""
