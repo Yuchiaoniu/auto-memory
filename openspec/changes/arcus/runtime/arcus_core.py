@@ -3162,7 +3162,6 @@ def _memory_maybe_extract(project_path, user_msg, response_text):
 # 改由 arcus_adaptive 提供五點修正後的骨架：正規化字集去重、淨證據升級、
 # exception 例外信號、_sweep 淘汰與降級。這裡只留薄包裝，維持既有分派與系統提示呼叫點不變。
 # D4「預設值而非眼罩」屬提示層語意判斷，由下面的注入 header 與教學段承載，不寫進計數骨架。
-_ARCUS_USER_MODEL = '/home/yuchi/.claude/arcus_user_model.jsonl'  # 實際讀寫在 arcus_adaptive，保留常數供既有引用
 
 _PRINCIPLE_HEADER = (
     '【你對這位使用者已萃取的設計思考原則——這是你已確認過的偏好，優先於臨時直覺。'
