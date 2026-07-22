@@ -39,6 +39,16 @@ import datetime
 import tempfile
 import threading
 import subprocess
+# §93 統一自適應模組（與本檔同資料夾）。載入失敗設 None，寧可少功能也不讓服務起不來。
+try:
+    import arcus_adaptive as _adaptive
+except Exception:
+    try:
+        import os as _os_ad, sys as _sys_ad
+        _sys_ad.path.insert(0, _os_ad.path.dirname(_os_ad.path.abspath(__file__)))
+        import arcus_adaptive as _adaptive
+    except Exception:
+        _adaptive = None
 
 # ── 全域路徑常數（合併自六支各自的路徑定義，去重）──────────────────────────────
 _CLAUDE_HOME = os.path.expanduser("~/.claude")
@@ -1373,6 +1383,10 @@ def _arcus_system_prompt(project_path):
 
 鐵律：這機制成功的樣子是「越來越少問」。絕不可為了多萃取而多問；原則靠讀懂回答的本質而長，不是靠一直問而長。萃取寧可窄一點、把 scope 標清楚，也不要拿一次回答就當通則。
 
+## 語言偏好（寫文章時的語境，同一套學習流程）
+
+語言偏好走上面同一套四步流程，只換一組指令、且只在寫文章的情境套用：收料用 style_add，多帶一個 triggers（keywords 放會出現在使用者訊息裡的字，如「論文」「段落」「潤稿」；mode 填 article），固化用 style_hit(id, "confirm")，被更正用 style_hit(id, "contradict")。套用時系統只把「這一輪訊息命中觸發條件」的偏好餵給你，不是全部倒出來。純比對字樣的部分（本研究改此研究、絕對詞標記）不必背，寫完草稿呼叫 mechanical_scan 掃一遍即可；要讀懂語意才能判斷的部分（不把話講死、完整但不冗長、專詞先給白話、被問怎麼做先分析而不直接開處方）才靠注入的偏好。對話聊天不受這些寫文章規則管，自由發揮即可。
+
 ## 工作紀律（比照本機 Claude 的規則）
 
 **絕不自創臨時工具。** 不准為了繞過草稿與型別檢查而在 arcus_core.py 裡追加任何「用完即刪」「暫時性」「臨時修補」的分派分支或字串替換函式。歷史上出現過一個叫 patch_text 的臨時分支，它包住整個分派點、讓任何檔案都能被直接字串替換，繞過全部安全流程，且註解寫著用完即刪卻長期留著——已於 2026-07-19 移除。改檔一律走 `stage_new` → `stage_run` → `promote` 這條路，沒有例外；覺得這條路做不到某件事，就把做不到的地方講清楚交給使用者判斷，不要自己開後門。
@@ -1399,7 +1413,11 @@ def _arcus_system_prompt(project_path):
 def build_system_prompt(project, project_path, user_msg=None, history=None):
     """Build the _SYSTEM prompt string for the claude CLI subprocess."""
     # arcus 是所有專案共用的底層引擎，不分專案一律回原生身分提示，讓系統提示與「唯一工具」邊界對齊。
-    return _arcus_system_prompt(project_path) + _principles_context_block()
+    _style = _adaptive.context_block(
+        'style', context_text=(user_msg or ''), mode=None,
+        header='【寫文章時的語言偏好——命中就照做，並附一句報備「依你〔id〕偏好我改了X（不對就說一聲）」；被更正就呼叫 style_hit(id,"contradict")】'
+    ) if _adaptive else ''
+    return _arcus_system_prompt(project_path) + _principles_context_block() + _style
 
 
 def parse_image_with_claude(image_b64, prompt_hint='識別這道題目的完整文字與選項'):
@@ -3471,6 +3489,19 @@ def _arcus_do_dispatch(cmd, payload):
         return principle_hit(payload.get('id') or payload.get('pid'), payload.get('kind'))
     if cmd == 'principle_list':
         return principle_list(payload.get('status'))
+    if cmd in ('style_add', 'style_hit', 'style_list', 'mechanical_scan') and not _adaptive:
+        return {'ok': False, 'error': 'arcus_adaptive 未載入'}
+    if cmd == 'style_add':
+        return _adaptive.rule_add('style', payload.get('when'), payload.get('then'),
+                                  payload.get('because'), payload.get('scope'),
+                                  payload.get('triggers'))
+    if cmd == 'style_hit':
+        return _adaptive.rule_hit('style', payload.get('id') or payload.get('sid'),
+                                  payload.get('kind') or payload.get('what'))
+    if cmd == 'style_list':
+        return _adaptive.rule_list('style', payload.get('status'))
+    if cmd == 'mechanical_scan':
+        return _adaptive.mechanical_scan(payload.get('text') or payload.get('body') or '')
     if cmd == 'restart':
         import subprocess as _sp
         _delay = payload.get('delay')

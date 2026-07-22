@@ -510,7 +510,7 @@ def chat():
     if pinned_raw.strip():
         context = f'=== 固定速查表（答案不變、不必再查）===\n{pinned_raw.strip()}'
 
-    _SYSTEM = build_system_prompt(project, project_path)
+    _SYSTEM = build_system_prompt(project, project_path, user_msg=user_msg)
 
     # §78 對話歷史取最近 2 輪（上兩則訊息脈絡），不再串接最多 5 輪長回覆。
     # 拼接對話歷史 + 當輪輸入
