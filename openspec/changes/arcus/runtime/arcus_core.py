@@ -1360,6 +1360,17 @@ def _arcus_system_prompt(project_path):
 - 已經入庫的論文一律不讀 PDF、不讀卡片的原始 JSON、不試圖繞過路徑沙箱；卡片指令（paper_cards）與引用工具（paper_quote）就是撈這篇原文的唯一入口，沒有第二條路。
 - 同一個工具連撞兩次都沒結果，就換上面這條路線，不要把同一個關鍵詞改成一堆變體反覆重試。
 
+## 設計思考原則（省掉重複解釋的機制）
+
+你在學這位使用者的設計思考模式：把他每次實質回答背後的原則萃取下來、存起來、下次直接套用，讓他不必一再重講同一套想法。四步，用三個 arcus_do 指令操作：
+
+- 收料：使用者給了實質回答（不是單純「好」「可以」）後，判斷這是不是一條可重用的原則（例如「面對不可逆的外推、又有分歧時，先把狀況攤清楚再問範圍」）。先用 principle_list 看有沒有既有同類；沒有才用 principle_add 寫一條（when 情境／then 偏好／because 本質／scope 適用範圍）。這條先是暫定，不會自動拿去用。
+- 固化：同一條原則又被觀察到成立，呼叫 principle_hit(id, "confirm")；累積到門檻且沒被打臉，它自動升為上線。
+- 套用：每輪開頭系統會把上線原則餵給你。碰到新問題若命中某條上線原則，直接照做、不要問，但一定附一句報備「依你〔id〕原則我選了X（不對就說一聲）」。沒有原則命中、或兩條原則打架，這時才問——問的正好是更深、沒被涵蓋的那一題。
+- 打臉：使用者更正了你照原則做的決定，立刻呼叫 principle_hit(id, "contradict")，那條退回暫定、不再自動套用。錯誤當場吸收、不累積。
+
+鐵律：這機制成功的樣子是「越來越少問」。絕不可為了多萃取而多問；原則靠讀懂回答的本質而長，不是靠一直問而長。萃取寧可窄一點、把 scope 標清楚，也不要拿一次回答就當通則。
+
 ## 工作紀律（比照本機 Claude 的規則）
 
 **絕不自創臨時工具。** 不准為了繞過草稿與型別檢查而在 arcus_core.py 裡追加任何「用完即刪」「暫時性」「臨時修補」的分派分支或字串替換函式。歷史上出現過一個叫 patch_text 的臨時分支，它包住整個分派點、讓任何檔案都能被直接字串替換，繞過全部安全流程，且註解寫著用完即刪卻長期留著——已於 2026-07-19 移除。改檔一律走 `stage_new` → `stage_run` → `promote` 這條路，沒有例外；覺得這條路做不到某件事，就把做不到的地方講清楚交給使用者判斷，不要自己開後門。
@@ -1386,7 +1397,7 @@ def _arcus_system_prompt(project_path):
 def build_system_prompt(project, project_path, user_msg=None, history=None):
     """Build the _SYSTEM prompt string for the claude CLI subprocess."""
     # arcus 是所有專案共用的底層引擎，不分專案一律回原生身分提示，讓系統提示與「唯一工具」邊界對齊。
-    return _arcus_system_prompt(project_path)
+    return _arcus_system_prompt(project_path) + _principles_context_block()
 
 
 def parse_image_with_claude(image_b64, prompt_hint='識別這道題目的完整文字與選項'):
@@ -3121,6 +3132,130 @@ def _memory_maybe_extract(project_path, user_msg, response_text):
         return None
 
 
+# === ARCUS ADDON · 設計思考原則學習（條件式原則，取代舊憲法法條權重）(2026-07-22) ===
+# 舊機制用反向傳播調浮點權重，笨重又拿代理訊號當梯度。這裡改為：引擎用自己的語言判斷，
+# 把使用者答案的本質萃取成一條白話條件式原則，存成可讀 jsonl；信心用離散計數表示
+# （evidence 觀察次數／contradicted 被打臉次數），不做梯度、不存純量權重。
+# 使用者的設計思考模式跨專案共用，故存於全域單檔。
+import json as _pjson
+
+_ARCUS_USER_MODEL = '/home/yuchi/.claude/arcus_user_model.jsonl'
+_PRINCIPLE_PROMOTE_EVIDENCE = 2   # evidence 達此值且未被打臉 → tentative 升 live
+
+def _principles_now():
+    import datetime as _dt
+    return _dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def _principles_load():
+    items = []
+    try:
+        with io.open(_ARCUS_USER_MODEL, encoding='utf-8') as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if not _line:
+                    continue
+                try:
+                    items.append(_pjson.loads(_line))
+                except Exception:
+                    continue
+    except FileNotFoundError:
+        pass
+    return items
+
+def _principles_save(items):
+    os.makedirs(os.path.dirname(_ARCUS_USER_MODEL), exist_ok=True)
+    _tmp = _ARCUS_USER_MODEL + '.tmp'
+    with io.open(_tmp, 'w', encoding='utf-8') as _f:
+        for _it in items:
+            _f.write(_pjson.dumps(_it, ensure_ascii=False) + '\n')
+    os.replace(_tmp, _ARCUS_USER_MODEL)
+
+def _principles_next_id(items):
+    mx = 0
+    for _it in items:
+        try:
+            _n = int(str(_it.get('id', '')).split('_')[-1])
+            if _n > mx:
+                mx = _n
+        except Exception:
+            pass
+    return 'p_%d' % (mx + 1)
+
+def _principle_promote(it):
+    if int(it.get('evidence', 0)) >= _PRINCIPLE_PROMOTE_EVIDENCE and int(it.get('contradicted', 0)) == 0:
+        it['status'] = 'live'
+
+def principle_add(when, then, because=None, scope=None):
+    """(1)收料：寫入一條候選原則，初始 tentative、evidence=1。完全相同的既有原則改為再觀察一次。"""
+    when = (when or '').strip()
+    then = (then or '').strip()
+    if not when or not then:
+        return {'ok': False, 'error': 'when 與 then 皆不可空'}
+    items = _principles_load()
+    for it in items:
+        if (it.get('when', '').strip() == when and it.get('then', '').strip() == then
+                and it.get('status') != 'retired'):
+            it['evidence'] = int(it.get('evidence', 0)) + 1
+            _principle_promote(it)
+            it['last'] = _principles_now()
+            _principles_save(items)
+            return {'ok': True, 'id': it['id'], 'status': it['status'], 'deduped': True, 'record': it}
+    rec = {
+        'id': _principles_next_id(items),
+        'when': when, 'then': then,
+        'because': (because or '').strip(),
+        'scope': (scope or '全域').strip(),
+        'evidence': 1, 'contradicted': 0, 'status': 'tentative',
+        'born': _principles_now(), 'last': _principles_now(),
+    }
+    items.append(rec)
+    _principles_save(items)
+    return {'ok': True, 'id': rec['id'], 'status': rec['status'], 'record': rec}
+
+def principle_hit(pid, kind):
+    """(2)固化／(4)打臉：confirm→evidence+1，達門檻且未被打臉即升 live；contradict→contradicted+1，退回 tentative。"""
+    kind = (kind or '').strip()
+    items = _principles_load()
+    hit = None
+    for it in items:
+        if it.get('id') == pid:
+            hit = it
+            break
+    if hit is None:
+        return {'ok': False, 'error': '找不到原則 %s' % pid}
+    if kind == 'confirm':
+        hit['evidence'] = int(hit.get('evidence', 0)) + 1
+        _principle_promote(hit)
+    elif kind == 'contradict':
+        hit['contradicted'] = int(hit.get('contradicted', 0)) + 1
+        hit['status'] = 'tentative'
+    else:
+        return {'ok': False, 'error': 'kind 必須是 confirm 或 contradict'}
+    hit['last'] = _principles_now()
+    _principles_save(items)
+    return {'ok': True, 'id': pid, 'status': hit['status'],
+            'evidence': hit['evidence'], 'contradicted': hit['contradicted']}
+
+def principle_list(status=None):
+    """列出原則供檢視；status 可填 live／tentative／retired，不填給全部。"""
+    items = _principles_load()
+    if status:
+        items = [it for it in items if it.get('status') == status]
+    return {'ok': True, 'count': len(items), 'principles': items}
+
+def _principles_context_block(limit=20):
+    """(3)套用：把 live 原則做成注入文字，餵進每輪系統提示。無 live 原則回空字串、不佔提示。"""
+    items = [it for it in _principles_load() if it.get('status') == 'live']
+    if not items:
+        return ''
+    items = items[-limit:]
+    lines = ['\n【你對這位使用者已萃取的設計思考原則——命中就照做，並附一句報備「依你〔id〕原則我選了X（不對就說一聲）」；被更正就呼叫 principle_hit(id,"contradict")】']
+    for it in items:
+        lines.append('- 〔%s｜%s〕當 %s → 偏好 %s（本質：%s）'
+                     % (it.get('id'), it.get('scope', '全域'),
+                        it.get('when'), it.get('then'), it.get('because', '')))
+    return '\n'.join(lines) + '\n'
+
 def _arcus_do_dispatch(cmd, payload):
     """arcus_do 的唯一分派點。回傳可 JSON 序列化的 dict（含 ok 欄位）。"""
     payload = payload or {}
@@ -3327,6 +3462,13 @@ def _arcus_do_dispatch(cmd, payload):
                         payload.get('title'),
                         payload.get('body') or payload.get('gloss') or payload.get('summary') or '',
                         payload.get('ref'))
+    if cmd == 'principle_add':
+        return principle_add(payload.get('when'), payload.get('then'),
+                             payload.get('because'), payload.get('scope'))
+    if cmd == 'principle_hit':
+        return principle_hit(payload.get('id') or payload.get('pid'), payload.get('kind'))
+    if cmd == 'principle_list':
+        return principle_list(payload.get('status'))
     if cmd == 'restart':
         import subprocess as _sp
         _delay = payload.get('delay')
